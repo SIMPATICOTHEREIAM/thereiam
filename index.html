@@ -38,7 +38,6 @@
       font-family: 'Inter', sans-serif;
       font-weight: 300;
       min-height: 100vh;
-      overflow-x: hidden;
     }
 
     /* ── subtle paper texture — tiled shift, no edge flicker ── */
@@ -901,11 +900,12 @@
       background: #f5f2eb;
       border: 1px solid rgba(26,22,18,0.14);
       padding: 22px 20px 20px;
-      z-index: 9000;
+      z-index: 99999;
       box-shadow: 0 6px 28px rgba(14,12,8,0.16);
-      transform: translateY(18px);
+      transform: translateY(20px);
       opacity: 0; visibility: hidden;
       transition: transform 0.45s ease, opacity 0.45s ease, visibility 0s linear 0.45s;
+      isolation: isolate;
     }
     #tr-toast.open {
       transform: translateY(0);
@@ -1375,77 +1375,101 @@
       }
     }
 
-    // ── Smile mechanic — localStorage persistent ──
-    const SMILE_KEY = 'tr_smiles_v1';
-    const TOTAL_KEY = 'tr_total_v1';
-    const TOAST_KEY = 'tr_toast_shown';
+    // ── Smile mechanic — persistent all-time + one like per piece per visit ──
+    const SMILE_KEY  = 'tr_smiles_v1';   // all-time per-piece totals { s1:5, p2:3, ... }
+    const TOTAL_KEY  = 'tr_total_v1';    // all-time grand total
+    const LIKED_KEY  = 'tr_liked_sess';  // pieces liked THIS session (sessionStorage)
+    const TOAST_KEY  = 'tr_toast_sess';  // toast shown this session
 
-    function loadSmiles() {
-      try { return JSON.parse(localStorage.getItem(SMILE_KEY) || '{}'); } catch(e) { return {}; }
-    }
-    function saveSmiles(c) { try { localStorage.setItem(SMILE_KEY, JSON.stringify(c)); } catch(e) {} }
-    function loadTotal()   { return parseInt(localStorage.getItem(TOTAL_KEY) || '0', 10); }
-    function saveTotal(n)  { try { localStorage.setItem(TOTAL_KEY, String(n)); } catch(e) {} }
+    function loadSmiles()   { try { return JSON.parse(localStorage.getItem(SMILE_KEY) || '{}'); } catch(e) { return {}; } }
+    function saveSmiles(c)  { try { localStorage.setItem(SMILE_KEY, JSON.stringify(c)); } catch(e) {} }
+    function loadTotal()    { return parseInt(localStorage.getItem(TOTAL_KEY) || '0', 10); }
+    function saveTotal(n)   { try { localStorage.setItem(TOTAL_KEY, String(n)); } catch(e) {} }
+    function loadLiked()    { try { return JSON.parse(sessionStorage.getItem(LIKED_KEY) || '{}'); } catch(e) { return {}; } }
+    function saveLiked(o)   { try { sessionStorage.setItem(LIKED_KEY, JSON.stringify(o)); } catch(e) {} }
 
     const counts = loadSmiles();
     let totalSmiles = loadTotal();
+    const likedThisSession = loadLiked();
 
-    // Restore state on load
+    function updateCounter() {
+      const counter = document.getElementById('totalCounter');
+      if (!counter) return;
+      counter.textContent = totalSmiles + (totalSmiles === 1 ? ' smile' : ' smiles') + ' across the archive';
+      counter.classList.add('show');
+    }
+
+    // Restore all button states on load
     document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.smile-btn').forEach(btn => {
         const piece = btn.dataset.piece;
+        const alreadyLiked = likedThisSession[piece];
+
+        // Show count if any all-time likes exist
         if (counts[piece]) {
-          btn.classList.add(totalSmiles >= 3 ? 'glow' : 'lit');
           const countEl = document.getElementById('count-' + piece);
           if (countEl) {
             const n = counts[piece];
-            countEl.textContent = piece.startsWith('p') ? n + (n===1?' smile':' smiles') : n;
+            countEl.textContent = piece.startsWith('p') ? n + (n === 1 ? ' smile' : ' smiles') : n;
             countEl.classList.add('active');
           }
         }
-      });
-      if (totalSmiles > 0) {
-        const counter = document.getElementById('totalCounter');
-        if (counter) {
-          counter.textContent = totalSmiles + (totalSmiles===1?' smile':' smiles') + ' across the archive';
-          counter.classList.add('show');
+
+        // Already liked this session — lock the button, show lit state
+        if (alreadyLiked) {
+          btn.classList.add('lit', 'used');
+          btn.setAttribute('aria-label', 'Already liked');
+          btn.style.cursor = 'default';
+          btn.style.opacity = '0.55';
         }
-      }
+      });
+
+      if (totalSmiles > 0) updateCounter();
     });
 
     function smileIt(btn) {
       const piece = btn.dataset.piece;
+
+      // One like per piece per session — ignore if already liked
+      if (likedThisSession[piece]) return;
+
+      // Record this like
+      likedThisSession[piece] = true;
+      saveLiked(likedThisSession);
+
       counts[piece] = (counts[piece] || 0) + 1;
       totalSmiles++;
       saveSmiles(counts);
       saveTotal(totalSmiles);
 
-      // Update per-piece count
+      // Update per-piece count display
       const countEl = document.getElementById('count-' + piece);
       if (countEl) {
         const n = counts[piece];
-        countEl.textContent = piece.startsWith('p') ? n + (n===1?' smile':' smiles') : n;
+        countEl.textContent = piece.startsWith('p') ? n + (n === 1 ? ' smile' : ' smiles') : n;
         countEl.classList.add('active');
       }
 
-      // Bounce
+      // Animate + lock the button
       btn.classList.add('lit');
       btn.style.transform = 'scale(1.35) rotate(-8deg)';
-      setTimeout(() => (btn.style.transform = ''), 200);
+      setTimeout(() => {
+        btn.style.transform = '';
+        btn.classList.add('used');
+        btn.style.cursor = 'default';
+        btn.style.opacity = '0.55';
+        btn.setAttribute('aria-label', 'Already liked');
+      }, 220);
 
-      // Update total counter
-      const counter = document.getElementById('totalCounter');
-      if (counter) {
-        counter.textContent = totalSmiles + (totalSmiles===1?' smile':' smiles') + ' across the archive';
-        counter.classList.add('show');
-      }
+      // Update grand total counter
+      updateCounter();
 
-      // Glow all buttons after 3 total
+      // Glow all after 3 total all-time
       if (totalSmiles >= 3) {
         document.querySelectorAll('.smile-btn').forEach(b => { b.classList.remove('lit'); b.classList.add('glow'); });
       }
 
-      // Show corner popup on first like this session
+      // Corner popup — once per session, after first like anywhere
       if (!sessionStorage.getItem(TOAST_KEY)) {
         sessionStorage.setItem(TOAST_KEY, '1');
         setTimeout(openToast, 700);
