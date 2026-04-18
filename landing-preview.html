@@ -677,28 +677,12 @@
       align-items: center; justify-content: center;
       gap: 0;
       opacity: 0; pointer-events: none;
-      transition: opacity 0.4s ease;
+      transition: opacity 1.2s ease;
     }
 
     #reveal.active { opacity: 1; pointer-events: all; }
 
-    /* All reveal content fades in together */
-    .reveal-word,
-    .reveal-logo,
-    .reveal-smiley,
-    .reveal-motto,
-    .reveal-doors,
-    .reveal-dismiss {
-      opacity: 0;
-      transition: opacity 1.2s ease 0.5s;
-    }
-
-    #reveal.active .reveal-word,
-    #reveal.active .reveal-logo,
-    #reveal.active .reveal-smiley,
-    #reveal.active .reveal-motto,
-    #reveal.active .reveal-doors,
-    #reveal.active .reveal-dismiss { opacity: 1; }
+    /* Content is always visible — the overlay itself fades in as one unit */
 
     /* "finally." */
     .reveal-word {
