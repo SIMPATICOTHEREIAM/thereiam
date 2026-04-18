@@ -890,64 +890,6 @@
       .sound-inner { grid-template-columns: 1fr; }
     }
   </style>
-
-  <style>
-    /* ── Corner toast popup ── */
-    #tr-toast {
-      position: fixed;
-      bottom: 24px; right: 24px;
-      width: 264px;
-      background: #f5f2eb;
-      border: 1px solid rgba(26,22,18,0.14);
-      padding: 22px 20px 20px;
-      z-index: 99999;
-      box-shadow: 0 6px 28px rgba(14,12,8,0.16);
-      transform: translateY(20px);
-      opacity: 0; visibility: hidden;
-      transition: transform 0.45s ease, opacity 0.45s ease, visibility 0s linear 0.45s;
-      isolation: isolate;
-    }
-    #tr-toast.open {
-      transform: translateY(0);
-      opacity: 1; visibility: visible;
-      transition: transform 0.45s ease, opacity 0.45s ease, visibility 0s linear 0s;
-    }
-    .toast-eyebrow {
-      font-family: 'Space Mono', monospace;
-      font-size: 7px; letter-spacing: 0.42em; text-transform: uppercase;
-      color: rgba(26,22,18,0.35); margin-bottom: 10px;
-    }
-    .toast-heading {
-      font-family: 'Northpoint', monospace;
-      font-size: 24px; letter-spacing: 0.1em;
-      color: rgba(26,22,18,0.88); margin-bottom: 8px; line-height: 1;
-    }
-    .toast-rule { width: 24px; border: none; border-top: 1px solid rgba(26,22,18,0.15); margin: 0 0 12px; }
-    .toast-tagline {
-      font-family: 'DM Sans', sans-serif; font-weight: 300;
-      font-size: 11px; color: rgba(26,22,18,0.5);
-      letter-spacing: 0.03em; margin-bottom: 16px;
-    }
-    .toast-doors { display: flex; gap: 8px; flex-wrap: wrap; }
-    .toast-btn {
-      font-family: 'Space Mono', monospace; font-size: 8px;
-      letter-spacing: 0.2em; text-transform: uppercase;
-      color: rgba(26,22,18,0.82); border: 1px solid rgba(26,22,18,0.25);
-      background: transparent; padding: 9px 14px;
-      cursor: pointer; text-decoration: none; display: inline-block;
-      transition: background 0.2s, color 0.2s;
-    }
-    .toast-btn:hover { background: rgba(26,22,18,0.88); color: #f5f2eb; }
-    .toast-btn.primary { background: rgba(26,22,18,0.88); color: #f5f2eb; }
-    .toast-btn.primary:hover { background: rgba(26,22,18,0.7); }
-    .toast-dismiss {
-      position: absolute; top: 10px; right: 12px;
-      background: none; border: none;
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      color: rgba(26,22,18,0.28); cursor: pointer;
-    }
-    .toast-dismiss:hover { color: rgba(26,22,18,0.6); }
-  </style>
 </head>
 <body>
 
@@ -1475,28 +1417,54 @@
     }
 
     function openToast() {
-      const t = document.getElementById('tr-toast');
-      if (!t) return;
-      // Re-append to body to escape any stacking context (filter/transform on parents)
+      // Remove any existing toast
+      const old = document.getElementById('tr-toast');
+      if (old) old.remove();
+
+      // Build fresh element with 100% inline styles — immune to any CSS stacking context
+      const t = document.createElement('div');
+      t.id = 'tr-toast';
+      Object.assign(t.style, {
+        position:   'fixed',
+        bottom:     '28px',
+        right:      '28px',
+        width:      '320px',
+        background: '#f5f2eb',
+        border:     '1px solid rgba(26,22,18,0.15)',
+        padding:    '28px 26px 24px',
+        zIndex:     '2147483647',
+        boxShadow:  '0 8px 32px rgba(14,12,8,0.2)',
+        opacity:    '0',
+        transform:  'translateY(14px)',
+        transition: 'opacity 0.4s ease, transform 0.4s ease',
+      });
+
+      t.innerHTML =
+        '<button onclick="closeToast()" style="position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;font-family:'Space Mono',monospace;font-size:11px;color:rgba(26,22,18,0.35);">✕</button>' +
+        '<div style="font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.42em;text-transform:uppercase;color:rgba(26,22,18,0.35);margin-bottom:12px;">Pilot Collection Vol. 1</div>' +
+        '<div style="font-family:'Northpoint',monospace;font-size:30px;letter-spacing:0.1em;color:rgba(26,22,18,0.88);margin-bottom:10px;line-height:1;">THEREIAM</div>' +
+        '<hr style="width:28px;border:none;border-top:1px solid rgba(26,22,18,0.15);margin:0 0 14px;">' +
+        '<div style="font-family:'DM Sans',sans-serif;font-weight:300;font-size:12px;color:rgba(26,22,18,0.5);letter-spacing:0.03em;margin-bottom:20px;">Everyone IS Everything.</div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+          '<a href="page-hoodies.html" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:#f5f2eb;background:rgba(26,22,18,0.88);border:1px solid rgba(26,22,18,0.25);padding:11px 18px;text-decoration:none;">The Collection →</a>' +
+          '<a href="page-brand.html" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(26,22,18,0.82);background:transparent;border:1px solid rgba(26,22,18,0.25);padding:11px 18px;text-decoration:none;">The Brand →</a>' +
+        '</div>';
+
       document.body.appendChild(t);
-      requestAnimationFrame(() => t.classList.add('open'));
+
+      // Double rAF to ensure paint before transition starts
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        t.style.opacity   = '1';
+        t.style.transform = 'translateY(0)';
+      }));
     }
+
     function closeToast() {
       const t = document.getElementById('tr-toast');
-      if (t) t.classList.remove('open');
+      if (!t) return;
+      t.style.opacity   = '0';
+      t.style.transform = 'translateY(14px)';
+      setTimeout(() => { if (t.parentNode) t.remove(); }, 420);
     }
-  </script>
-
-  <div id="tr-toast">
-    <button class="toast-dismiss" onclick="closeToast()">✕</button>
-    <div class="toast-eyebrow">Pilot Collection Vol. 1</div>
-    <div class="toast-heading">THEREIAM</div>
-    <hr class="toast-rule" />
-    <div class="toast-tagline">Everyone IS Everything.</div>
-    <div class="toast-doors">
-      <a class="toast-btn primary" href="page-hoodies.html">The Collection →</a>
-      <a class="toast-btn" href="page-brand.html">The Brand →</a>
-    </div>
-  </div>
-</body>
+  </script></body>
 </html>
