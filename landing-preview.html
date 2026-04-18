@@ -1476,7 +1476,10 @@
 
     function openToast() {
       const t = document.getElementById('tr-toast');
-      if (t) t.classList.add('open');
+      if (!t) return;
+      // Re-append to body to escape any stacking context (filter/transform on parents)
+      document.body.appendChild(t);
+      requestAnimationFrame(() => t.classList.add('open'));
     }
     function closeToast() {
       const t = document.getElementById('tr-toast');
