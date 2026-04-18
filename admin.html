@@ -615,7 +615,7 @@
           <div class="guide">
             <p>
               Edit piece names, colorways, and image paths here.
-              To <strong>swap an image</strong>, put your new photo in <code>Hoodie Mockups/</code> and update the path below.
+              To <strong>swap an image</strong>, put your new photo in <code>img/</code> and update the path below.
               To <strong>add a new piece</strong>, click the button at the bottom.
               Thumbnails update live as you type.
             </p>
@@ -633,7 +633,7 @@
             <p>
               These photos flow down the Brand page in an editorial scroll.
               <strong>Add, remove, or reorder</strong> them here — the layout auto-adjusts to look right at any count.
-              Put new photos in <code>Hoodie Mockups/</code> or create a <code>Brand Photos/</code> folder for them.
+              Put new photos in <code>img/</code> or create a <code>Brand Photos/</code> folder for them.
               Thumbnails update live as you type the path.
             </p>
           </div>
@@ -768,7 +768,7 @@
 
           <div class="folder-tree">
             <span class="folder">THEREIAM (Startup)/</span><br/>
-            &nbsp;&nbsp;<span class="folder">Hoodie Mockups/</span>
+            &nbsp;&nbsp;<span class="folder">img/</span>
             &nbsp;<span class="note">← hoodie photos (.jpg or .png)</span><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">hoodie-001IMG_1395.jpg</span><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">... (name them anything, then update the path in Hoodies or Brand tabs)</span><br/>
@@ -783,7 +783,7 @@
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">plain-sight.mp3</span><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">... (then add them in the Music tab above)</span><br/>
             <br/>
-            &nbsp;&nbsp;<span class="folder">THEREIAM LOGOS/</span>
+            &nbsp;&nbsp;<span class="folder">logos/</span>
             &nbsp;<span class="note">← logo files (don't rename these)</span><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">THEREIAM LOGO1.png</span> <span class="note">(wordmark)</span><br/>
             &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">THEREIAM LOGO2.png</span> <span class="note">(Mr. Smile)</span><br/>
@@ -799,7 +799,7 @@
           <div style="margin-top:28px;">
             <div class="guide">
               <p>
-                To swap logos: replace the files in <code>THEREIAM LOGOS/</code> keeping the
+                To swap logos: replace the files in <code>logos/</code> keeping the
                 <strong>exact same filenames</strong>. The site picks them up automatically.
               </p>
             </div>
@@ -1046,7 +1046,7 @@
         colorway: '',
         graphic: '',
         fit: 'XL Baggy · Heavy Fleece',
-        images: ['Hoodie Mockups/', 'Hoodie Mockups/', 'Hoodie Mockups/']
+        images: ['img/', 'img/', 'img/']
       });
       renderHoodies();
       const cards = document.querySelectorAll('#hoodies-list .card');
@@ -1092,7 +1092,7 @@
 
     function addBrandPhoto() {
       if (!DATA.brandPhotos) DATA.brandPhotos = [];
-      DATA.brandPhotos.push('Hoodie Mockups/');
+      DATA.brandPhotos.push('img/');
       renderBrand();
       const rows = document.querySelectorAll('.brand-photo-row');
       if (rows.length) {
