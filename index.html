@@ -1379,7 +1379,6 @@
     const SMILE_KEY  = 'tr_smiles_v1';   // all-time per-piece totals { s1:5, p2:3, ... }
     const TOTAL_KEY  = 'tr_total_v1';    // all-time grand total
     const LIKED_KEY  = 'tr_liked_sess';  // pieces liked THIS session (sessionStorage)
-    const TOAST_KEY  = 'tr_toast_sess';  // toast shown this session
 
     function loadSmiles()   { try { return JSON.parse(localStorage.getItem(SMILE_KEY) || '{}'); } catch(e) { return {}; } }
     function saveSmiles(c)  { try { localStorage.setItem(SMILE_KEY, JSON.stringify(c)); } catch(e) {} }
@@ -1469,15 +1468,20 @@
         document.querySelectorAll('.smile-btn').forEach(b => { b.classList.remove('lit'); b.classList.add('glow'); });
       }
 
-      // Corner popup — once per session, after first like anywhere
-      if (!sessionStorage.getItem(TOAST_KEY)) {
-        sessionStorage.setItem(TOAST_KEY, '1');
-        setTimeout(openToast, 700);
-      }
+      // Corner popup — show on every new like, auto-dismiss after 4s
+      clearTimeout(window._toastTimer);
+      openToast();
+      window._toastTimer = setTimeout(closeToast, 4000);
     }
 
-    function openToast()  { document.getElementById('tr-toast').classList.add('open'); }
-    function closeToast() { document.getElementById('tr-toast').classList.remove('open'); }
+    function openToast() {
+      const t = document.getElementById('tr-toast');
+      if (t) t.classList.add('open');
+    }
+    function closeToast() {
+      const t = document.getElementById('tr-toast');
+      if (t) t.classList.remove('open');
+    }
   </script>
 
   <div id="tr-toast">
