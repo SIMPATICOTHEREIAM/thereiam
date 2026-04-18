@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THEREIAM — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=DM+Sans:wght@300;400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="thereiam-ui.css" />
+  <style>
+    @font-face {
+      font-family: 'Northpoint';
+      src: url('North point.ttf') format('truetype');
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #09080d;
+      --surface: #111018;
+      --border:  rgba(237,233,223,0.07);
+      --fg:      #ede9df;
+      --dim:     rgba(237,233,223,0.38);
+      --muted:   rgba(237,233,223,0.16);
+      --blue:    #2d6aad;
+      --ember:   #c4962a;
+      --green:   #3a9e6a;
+      --red:     #b54a3a;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+    }
+
+    /* ══ PASSWORD SCREEN ══ */
+    #pw-screen {
+      position: fixed;
+      inset: 0;
+      background: #06050a;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .pw-brand {
+      font-family: 'Northpoint', monospace;
+      font-size: clamp(32px, 6vw, 64px);
+      letter-spacing: 0.1em;
+      color: rgba(237,233,223,0.7);
+      margin-bottom: 48px;
+    }
+
+    .pw-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: rgba(237,233,223,0.2);
+      margin-bottom: 16px;
+    }
+
+    #pw-input {
+      width: 280px;
+      background: rgba(237,233,223,0.04);
+      border: 1px solid rgba(237,233,223,0.1);
+      color: var(--fg);
+      font-family: 'Space Mono', monospace;
+      font-size: 15px;
+      letter-spacing: 0.3em;
+      padding: 14px 20px;
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+
+    #pw-input:focus { border-color: rgba(45,106,173,0.5); }
+
+    #pw-err {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.22em;
+      color: var(--red);
+      height: 16px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    #pw-submit {
+      width: 280px;
+      background: var(--blue);
+      border: none;
+      color: #fff;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      padding: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    #pw-submit:hover { background: #3a7fc7; }
+
+    /* ══ MAIN ADMIN UI (hidden until unlocked) ══ */
+    #admin-ui { display: none; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .topbar-brand {
+      font-family: 'Northpoint', monospace;
+      font-size: 18px;
+      letter-spacing: 0.06em;
+      color: var(--fg);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      opacity: 0.75;
+      transition: opacity 0.2s;
+      text-decoration: none;
+      display: block;
+    }
+    .topbar-brand:hover { opacity: 1; }
+
+    .topbar-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .topbar-actions { display: flex; gap: 12px; align-items: center; }
+
+    .btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--dim);
+      padding: 9px 20px;
+      cursor: pointer;
+      transition: all 0.25s;
+    }
+
+    .btn:hover { border-color: var(--dim); color: var(--fg); }
+    .btn-save { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .btn-save:hover { background: #3a7fc7; border-color: #3a7fc7; color: #fff; }
+    .btn-danger { border-color: rgba(181,74,58,0.4); color: var(--red); }
+    .btn-danger:hover { background: rgba(181,74,58,0.12); }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: calc(100vh - 57px);
+    }
+
+    /* ── SIDEBAR NAV ── */
+    .sidenav {
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 32px 0;
+    }
+
+    .sidenav-item {
+      display: block;
+      padding: 12px 28px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .sidenav-item:hover { color: var(--fg); }
+    .sidenav-item.active { color: var(--fg); border-left-color: var(--blue); background: rgba(45,106,173,0.06); }
+
+    .sidenav-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 12px 28px;
+    }
+
+    /* ── MAIN PANEL ── */
+    .main { padding: 40px 48px; max-width: 920px; }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 28px;
+      margin-bottom: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--fg);
+    }
+
+    .card-id { font-family: 'Space Mono', monospace; font-size: 8px; letter-spacing: 0.18em; color: var(--blue); }
+
+    /* ── FIELDS ── */
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+    .field-row.full { grid-template-columns: 1fr; }
+    .field-row.triple { grid-template-columns: 1fr 1fr 1fr; }
+
+    .field { display: flex; flex-direction: column; gap: 7px; }
+
+    .field label {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field textarea,
+    .field select {
+      background: rgba(237,233,223,0.04);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      padding: 10px 14px;
+      transition: border-color 0.2s;
+      outline: none;
+      width: 100%;
+    }
+
+    .field input:focus,
+    .field textarea:focus { border-color: rgba(45,106,173,0.5); }
+    .field textarea { resize: vertical; min-height: 90px; line-height: 1.7; }
+
+    /* image paths */
+    .img-paths { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+
+    .img-path-row { display: flex; align-items: center; gap: 10px; }
+    .img-path-row input { flex: 1; }
+
+    .img-preview {
+      width: 44px;
+      height: 44px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    /* brand photo row */
+    .brand-photo-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      background: rgba(237,233,223,0.02);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+    }
+
+    .brand-photo-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      color: var(--muted);
+      min-width: 22px;
+    }
+
+    .brand-photo-row input { flex: 1; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 6px 0; color: var(--fg); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; }
+    .brand-photo-row input:focus { border-bottom-color: rgba(45,106,173,0.5); }
+
+    .brand-photo-preview {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--muted);
+      font-size: 14px;
+      flex-shrink: 0;
+      padding: 0 4px;
+    }
+
+    /* ── ADD BUTTONS ── */
+    .add-btn {
+      width: 100%;
+      padding: 14px;
+      border: 1px dashed rgba(237,233,223,0.12);
+      background: none;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 8px;
+    }
+
+    .add-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--green);
+      color: #fff;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      padding: 12px 28px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── UPLOAD LABEL ── */
+    .upload-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--blue);
+      border: 1px solid rgba(45,106,173,0.3);
+      padding: 5px 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .upload-label:hover { background: rgba(45,106,173,0.08); border-color: var(--blue); }
+    .upload-label:active { transform: scale(0.96); }
+
+    /* ── PAGES PANEL GRID ── */
+    .pages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+
+    .page-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .page-card:hover { border-color: rgba(237,233,223,0.18); }
+
+    .page-preview-viewport {
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      position: relative;
+      background: #07060a;
+      cursor: pointer;
+    }
+
+    /* hover overlay — "Edit Content" prompt */
+    .page-preview-viewport::after {
+      content: 'Edit Content →';
+      position: absolute;
+      inset: 0;
+      background: rgba(9,8,13,0);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: transparent;
+      transition: background 0.25s, color 0.25s;
+      z-index: 10;
+    }
+    .page-preview-viewport:hover::after {
+      background: rgba(9,8,13,0.52);
+      color: rgba(237,233,223,0.75);
+    }
+
+    .page-preview-viewport iframe {
+      width: 1280px;
+      height: 800px;
+      border: none;
+      pointer-events: none;
+      transform-origin: top left;
+    }
+
+    .page-card-footer {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+    }
+
+    .page-card-name {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    .page-card-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .page-card-actions a,
+    .page-card-actions button {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 5px 10px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .page-card-actions a {
+      color: var(--blue);
+      border: 1px solid rgba(45,106,173,0.3);
+      background: none;
+    }
+    .page-card-actions a:hover { background: rgba(45,106,173,0.08); }
+
+    .page-card-actions button {
+      color: var(--dim);
+      border: 1px solid var(--border);
+      background: none;
+    }
+    .page-card-actions button:hover { color: var(--fg); border-color: rgba(237,233,223,0.2); }
+
+    /* ── GUIDE BOX ── */
+    .guide {
+      background: rgba(45,106,173,0.07);
+      border: 1px solid rgba(45,106,173,0.2);
+      padding: 20px 24px;
+      margin-bottom: 28px;
+    }
+
+    .guide p { font-size: 13px; color: var(--dim); line-height: 1.8; }
+    .guide strong { color: var(--fg); font-weight: 400; }
+    .guide code { font-family: 'Space Mono', monospace; font-size: 11px; background: rgba(237,233,223,0.06); padding: 2px 6px; color: var(--blue); }
+
+    /* ── FOLDER TREE ── */
+    .folder-tree {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      line-height: 2;
+      color: var(--dim);
+      background: rgba(237,233,223,0.03);
+      border: 1px solid var(--border);
+      padding: 20px 24px;
+      margin-top: 16px;
+    }
+
+    .folder-tree .folder { color: var(--ember); }
+    .folder-tree .file   { color: var(--fg); }
+    .folder-tree .note   { color: var(--muted); }
+
+    /* ── PASSWORD CHANGE ── */
+    .pw-change-row { display: flex; gap: 12px; align-items: flex-end; }
+    .pw-change-row .field { flex: 1; }
+
+    @media (max-width: 768px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidenav { display: flex; overflow-x: auto; padding: 0; border-right: none; border-bottom: 1px solid var(--border); }
+      .sidenav-item { white-space: nowrap; border-left: none; border-bottom: 2px solid transparent; }
+      .sidenav-item.active { border-left-color: transparent; border-bottom-color: var(--blue); }
+      .main { padding: 24px; }
+      .field-row, .field-row.triple { grid-template-columns: 1fr; }
+      .topbar { padding: 14px 20px; }
+      #pw-input, #pw-submit { width: 240px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════
+       PASSWORD SCREEN
+  ══════════════════════════════════════ -->
+  <div id="pw-screen">
+    <div class="pw-brand">THEREIAM</div>
+    <div class="pw-label">Admin Access</div>
+    <input id="pw-input" type="password" placeholder="· · · · · · · ·"
+      onkeydown="if(event.key==='Enter') checkPw()" autofocus />
+    <div id="pw-err"></div>
+    <button id="pw-submit" onclick="checkPw()">Enter →</button>
+  </div>
+
+
+  <!-- ══════════════════════════════════════
+       ADMIN UI (revealed after password)
+  ══════════════════════════════════════ -->
+  <div id="admin-ui">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div>
+        <button class="topbar-brand" onclick="saveAll(); window.location.href='landing-preview.html';" title="Save &amp; return to site">THEREIAM</button>
+        <div class="topbar-label">← save &amp; exit to site</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="lockAdmin()">Lock ↗</button>
+        <button class="btn btn-danger" onclick="resetAll()">Reset to defaults</button>
+        <button class="btn btn-save" onclick="saveAll()">Save changes →</button>
+      </div>
+    </div>
+
+    <div class="layout">
+
+      <!-- SIDEBAR -->
+      <nav class="sidenav">
+        <button class="sidenav-item" data-panel="pages"       onclick="showPanel('pages', this)">Pages</button>
+        <hr class="sidenav-divider" />
+        <button class="sidenav-item active" data-panel="hoodies"    onclick="showPanel('hoodies', this)">Hoodies</button>
+        <button class="sidenav-item" data-panel="brand"       onclick="showPanel('brand', this)">Brand Page</button>
+        <hr class="sidenav-divider" />
+        <button class="sidenav-item" data-panel="music"       onclick="showPanel('music', this)">Music</button>
+        <button class="sidenav-item" data-panel="media"       onclick="showPanel('media', this)">Media Library</button>
+        <button class="sidenav-item" data-panel="archive"     onclick="showPanel('archive', this)">Archive</button>
+        <button class="sidenav-item" data-panel="sightings"   onclick="showPanel('sightings', this)">Sightings</button>
+        <hr class="sidenav-divider" />
+        <button class="sidenav-item" data-panel="submissions" onclick="showPanel('submissions', this)">Submissions</button>
+        <button class="sidenav-item" data-panel="emails"      onclick="showPanel('emails', this)">Email List</button>
+        <hr class="sidenav-divider" />
+        <button class="sidenav-item" data-panel="settings"    onclick="showPanel('settings', this)">Settings</button>
+        <button class="sidenav-item" data-panel="files"       onclick="showPanel('files', this)">File Guide</button>
+      </nav>
+
+      <!-- MAIN -->
+      <div class="main">
+
+        <!-- ── PAGES PANEL ── -->
+        <div class="panel" id="panel-pages">
+          <div class="panel-title">Site Pages</div>
+          <div class="guide" style="margin-bottom:28px;">
+            <p>Live previews of every page. Click <strong>Open</strong> to view in your browser, or <strong>Edit →</strong> to jump to that panel here in admin.</p>
+          </div>
+          <div class="pages-grid" id="pages-grid"></div>
+        </div>
+
+        <!-- ── HOODIES PANEL ── -->
+        <div class="panel active" id="panel-hoodies">
+          <div class="panel-title">Pilot Collection — Hoodies</div>
+
+          <div class="guide">
+            <p>
+              Edit piece names, colorways, and image paths here.
+              To <strong>swap an image</strong>, put your new photo in <code>Hoodie Mockups/</code> and update the path below.
+              To <strong>add a new piece</strong>, click the button at the bottom.
+              Thumbnails update live as you type.
+            </p>
+          </div>
+
+          <div id="hoodies-list"></div>
+          <button class="add-btn" onclick="addHoodie()">+ Add new hoodie</button>
+        </div>
+
+        <!-- ── BRAND PAGE PANEL ── -->
+        <div class="panel" id="panel-brand">
+          <div class="panel-title">Brand Page — Photo Scroll</div>
+
+          <div class="guide">
+            <p>
+              These photos flow down the Brand page in an editorial scroll.
+              <strong>Add, remove, or reorder</strong> them here — the layout auto-adjusts to look right at any count.
+              Put new photos in <code>Hoodie Mockups/</code> or create a <code>Brand Photos/</code> folder for them.
+              Thumbnails update live as you type the path.
+            </p>
+          </div>
+
+          <div id="brand-list"></div>
+          <button class="add-btn" onclick="addBrandPhoto()">+ Add photo</button>
+        </div>
+
+        <!-- ── MUSIC PANEL ── -->
+        <div class="panel" id="panel-music">
+          <div class="panel-title">Music — Track List</div>
+
+          <div class="guide">
+            <p>
+              Upload audio files directly with the <strong>↑ Upload</strong> button — no file path needed.<br/>
+              Or drop files in your <code>Music/</code> folder and type the path manually.<br/>
+              Hit <strong>Save changes</strong> to go live on all pages.
+            </p>
+          </div>
+
+          <div id="music-list"></div>
+          <button class="add-btn" onclick="addTrack()">+ Add track</button>
+        </div>
+
+        <!-- ── MEDIA LIBRARY PANEL ── -->
+        <div class="panel" id="panel-media">
+          <div class="panel-title">Media Library</div>
+
+          <div class="guide" style="margin-bottom:24px;">
+            <p>
+              All files uploaded through admin live here — audio, images, anything.
+              Files are stored in the browser's local database (no size limit).
+              Delete a file here to free up space.
+            </p>
+          </div>
+
+          <div style="margin-bottom:20px;">
+            <label for="media-upload-any" class="upload-label" style="display:inline-flex;gap:8px;padding:10px 20px;font-size:9px;">
+              ↑ &nbsp;Upload Files (any type)
+            </label>
+            <input type="file" id="media-upload-any" multiple
+              accept="audio/*,image/*,video/*,.pdf,.txt,.doc,.docx"
+              style="display:none"
+              onchange="trUploadMediaLibrary(this)" />
+          </div>
+
+          <div id="media-library-list">
+            <p style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.2em;">Loading…</p>
+          </div>
+        </div>
+
+        <!-- ── ARCHIVE PANEL ── -->
+        <div class="panel" id="panel-archive">
+          <div class="panel-title">Archive — Poems & Spoken Word</div>
+
+          <div class="guide">
+            <p>
+              Edit or add written pieces in the <strong>In Plain Sight</strong> archive.
+              Use blank lines to separate stanzas. Press Enter twice for a new paragraph.
+            </p>
+          </div>
+
+          <div id="archive-list"></div>
+          <button class="add-btn" onclick="addPiece()">+ Add archive piece</button>
+        </div>
+
+        <!-- ── SIGHTINGS PANEL ── -->
+        <div class="panel" id="panel-sightings">
+          <div class="panel-title">THEREIAM — Sightings</div>
+
+          <div class="guide">
+            <p>
+              Every time THEREIAM gets spotted — log it here.
+              City and date show on the archive page.
+            </p>
+          </div>
+
+          <div id="sightings-list"></div>
+          <button class="add-btn" onclick="addSighting()">+ Add sighting</button>
+        </div>
+
+        <!-- ── SETTINGS PANEL ── -->
+        <div class="panel" id="panel-settings">
+          <div class="panel-title">Settings</div>
+
+          <div class="guide">
+            <p>
+              Change the admin password here. The current password is stored only in this file.
+              After changing it, the new password takes effect immediately on next lock/unlock.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Admin Password</span>
+            </div>
+            <div class="pw-change-row">
+              <div class="field">
+                <label>New Password</label>
+                <input type="password" id="new-pw" placeholder="Enter new password" />
+              </div>
+              <div class="field">
+                <label>Confirm Password</label>
+                <input type="password" id="confirm-pw" placeholder="Repeat new password" />
+              </div>
+              <button class="btn btn-save" style="padding:10px 20px;white-space:nowrap;" onclick="changePassword()">Update →</button>
+            </div>
+            <p id="pw-change-msg" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;color:var(--green);margin-top:12px;height:16px;"></p>
+          </div>
+
+          <div class="card" style="margin-top:16px;">
+            <div class="card-header">
+              <span class="card-title">Instagram Handle</span>
+            </div>
+            <div class="field">
+              <label>Handle (with @)</label>
+              <input type="text" id="ig-handle" value="" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ── FILE GUIDE PANEL ── -->
+        <div class="panel" id="panel-files">
+          <div class="panel-title">File & Folder Guide</div>
+
+          <div class="guide">
+            <p>
+              Everything lives in one folder on your computer.
+              Here's exactly where to put new files so the site picks them up automatically.
+            </p>
+          </div>
+
+          <div class="folder-tree">
+            <span class="folder">THEREIAM (Startup)/</span><br/>
+            &nbsp;&nbsp;<span class="folder">Hoodie Mockups/</span>
+            &nbsp;<span class="note">← hoodie photos (.jpg or .png)</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">hoodie-001IMG_1395.jpg</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">... (name them anything, then update the path in Hoodies or Brand tabs)</span><br/>
+            <br/>
+            &nbsp;&nbsp;<span class="folder">Brand Photos/</span>
+            &nbsp;<span class="note">← optional folder for brand-only photos</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">brand-photo-001.jpg</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">... (create this folder if needed)</span><br/>
+            <br/>
+            &nbsp;&nbsp;<span class="folder">Music/</span>
+            &nbsp;<span class="note">← drop .mp3 or .m4a files here</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">plain-sight.mp3</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">... (then add them in the Music tab above)</span><br/>
+            <br/>
+            &nbsp;&nbsp;<span class="folder">THEREIAM LOGOS/</span>
+            &nbsp;<span class="note">← logo files (don't rename these)</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">THEREIAM LOGO1.png</span> <span class="note">(wordmark)</span><br/>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="file">THEREIAM LOGO2.png</span> <span class="note">(Mr. Smile)</span><br/>
+            <br/>
+            &nbsp;&nbsp;<span class="file">admin.html</span> <span class="note">← you are here</span><br/>
+            &nbsp;&nbsp;<span class="file">thereiam-content.js</span> <span class="note">← master content file</span><br/>
+            &nbsp;&nbsp;<span class="file">landing-preview.html</span><br/>
+            &nbsp;&nbsp;<span class="file">page-hoodies.html</span><br/>
+            &nbsp;&nbsp;<span class="file">page-brand.html</span><br/>
+            &nbsp;&nbsp;<span class="file">page-archive.html</span><br/>
+          </div>
+
+          <div style="margin-top:28px;">
+            <div class="guide">
+              <p>
+                To swap logos: replace the files in <code>THEREIAM LOGOS/</code> keeping the
+                <strong>exact same filenames</strong>. The site picks them up automatically.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── EMAIL LIST PANEL ── -->
+        <div class="panel" id="panel-emails">
+          <div class="panel-title">Email List</div>
+
+          <div class="guide" style="margin-bottom:24px;">
+            <p>
+              Email addresses from everyone who submitted work through the site.
+              Remove individual addresses with ✕, or copy the full list to paste into any email tool.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-header" style="margin-bottom:16px;">
+              <span class="card-title" id="email-count-label">0 addresses</span>
+              <button onclick="trCopyEmails()" class="btn">Copy All →</button>
+            </div>
+            <div id="tr-email-rows">
+              <p style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.2em;">No emails yet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── SUBMISSIONS PANEL ── -->
+        <div class="panel" id="panel-submissions">
+          <div class="panel-title">Submissions</div>
+
+          <div class="guide" style="margin-bottom:28px;">
+            <p>
+              Work submitted through the site. Use <strong>Add to Section</strong> to publish a piece
+              directly into the Archive. Email addresses are collected in the
+              <strong>Email List</strong> panel.
+            </p>
+          </div>
+
+          <!-- Submission Cards -->
+          <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.4em;text-transform:uppercase;color:var(--dim);margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;">
+            <span id="sub-count-label">Submissions</span>
+            <button onclick="trClearAllSubs()" style="background:none;border:1px solid rgba(181,74,58,0.3);color:rgba(181,74,58,0.5);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;text-transform:uppercase;padding:5px 12px;cursor:pointer;transition:all .2s;" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='rgba(181,74,58,.5)'">Clear All</button>
+          </div>
+
+          <div id="tr-submissions-list">
+            <p style="color:var(--muted);font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;">No submissions yet.</p>
+          </div>
+        </div>
+
+      </div><!-- /.main -->
+    </div><!-- /.layout -->
+
+  </div><!-- /#admin-ui -->
+
+  <div id="toast">Changes saved.</div>
+
+  <script src="thereiam-media-db.js"></script>
+  <script src="thereiam-content.js"></script>
+  <script>
+    /* ══════════════════════════════════════════════
+       PASSWORD — with rate limiting
+    ══════════════════════════════════════════════ */
+    const ADMIN_PW_KEY      = 'tr_admin_pw';
+    const DEFAULT_PW        = 'THEREIAM';
+    const MAX_ATTEMPTS      = 5;
+    const LOCKOUT_MS        = 5 * 60 * 1000; // 5 minutes
+    const ATTEMPT_KEY       = 'tr_pw_attempts';
+    const LOCKOUT_UNTIL_KEY = 'tr_pw_locked_until';
+
+    function getPassword() {
+      return localStorage.getItem(ADMIN_PW_KEY) || DEFAULT_PW;
+    }
+
+    function getPwAttempts()  { return parseInt(sessionStorage.getItem(ATTEMPT_KEY)  || '0'); }
+    function getLockoutUntil(){ return parseInt(sessionStorage.getItem(LOCKOUT_UNTIL_KEY) || '0'); }
+
+    function checkPw() {
+      const now = Date.now();
+      const locked = getLockoutUntil();
+
+      if (locked && now < locked) {
+        const mins = Math.ceil((locked - now) / 60000);
+        document.getElementById('pw-err').textContent = `Locked — try again in ${mins} min`;
+        return;
+      }
+
+      const input = document.getElementById('pw-input').value;
+
+      if (input === getPassword()) {
+        // ✓ Correct — clear attempts + unlock
+        sessionStorage.removeItem(ATTEMPT_KEY);
+        sessionStorage.removeItem(LOCKOUT_UNTIL_KEY);
+        sessionStorage.setItem('tr_admin_ok', '1');
+        document.getElementById('pw-screen').style.display = 'none';
+        document.getElementById('admin-ui').style.display  = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-err').textContent = '';
+        renderAll();
+      } else {
+        // ✗ Wrong
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+
+        const attempts = getPwAttempts() + 1;
+        sessionStorage.setItem(ATTEMPT_KEY, attempts);
+        const remaining = MAX_ATTEMPTS - attempts;
+
+        if (attempts >= MAX_ATTEMPTS) {
+          const until = now + LOCKOUT_MS;
+          sessionStorage.setItem(LOCKOUT_UNTIL_KEY, until);
+          sessionStorage.setItem(ATTEMPT_KEY, '0');
+          document.getElementById('pw-err').textContent = 'Too many attempts — locked for 5 min';
+        } else {
+          document.getElementById('pw-err').textContent =
+            remaining === 1 ? 'Wrong — 1 attempt remaining' : `Wrong — ${remaining} attempts remaining`;
+        }
+      }
+    }
+
+    function lockAdmin() {
+      document.getElementById('admin-ui').style.display  = 'none';
+      document.getElementById('pw-screen').style.display = 'flex';
+      sessionStorage.removeItem('tr_admin_ok');
+      setTimeout(() => document.getElementById('pw-input').focus(), 50);
+    }
+
+    function changePassword() {
+      const np = document.getElementById('new-pw').value.trim();
+      const cp = document.getElementById('confirm-pw').value.trim();
+      const msg = document.getElementById('pw-change-msg');
+      if (!np) { msg.style.color='var(--red)'; msg.textContent='Enter a new password.'; return; }
+      if (np !== cp) { msg.style.color='var(--red)'; msg.textContent='Passwords do not match.'; return; }
+      localStorage.setItem(ADMIN_PW_KEY, np);
+      document.getElementById('new-pw').value = '';
+      document.getElementById('confirm-pw').value = '';
+      msg.style.color='var(--green)'; msg.textContent='Password updated.';
+      setTimeout(() => msg.textContent = '', 3000);
+    }
+
+    /* ══════════════════════════════════════════════
+       DATA
+    ══════════════════════════════════════════════ */
+    let DATA = JSON.parse(JSON.stringify(THEREIAM_CONTENT));
+
+    /* ══════════════════════════════════════════════
+       PANEL SWITCHING
+    ══════════════════════════════════════════════ */
+    function showPanel(name, btn) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidenav-item').forEach(b => b.classList.remove('active'));
+      const panel = document.getElementById('panel-' + name);
+      if (panel) panel.classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+
+    function goToPanel(name) {
+      const navBtn = document.querySelector('.sidenav-item[data-panel="' + name + '"]');
+      showPanel(name, navBtn || null);
+    }
+
+    /* ══════════════════════════════════════════════
+       RENDER FUNCTIONS
+    ══════════════════════════════════════════════ */
+
+    // ── HOODIES ──
+    function renderHoodies() {
+      const el = document.getElementById('hoodies-list');
+      if (!DATA.hoodies.length) {
+        el.innerHTML = `<p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.25em;color:var(--muted);padding:20px 0;">No hoodies yet. Add one below.</p>`;
+        return;
+      }
+      el.innerHTML = DATA.hoodies.map((h, i) => `
+        <div class="card" id="hoodie-card-${i}">
+          <div class="card-header">
+            <div>
+              <span class="card-title">${h.name || 'Hoodie ' + (i+1)}</span>
+              &nbsp;
+              <span class="card-id">${h.id}</span>
+            </div>
+            <div style="display:flex;gap:8px;">
+              ${i > 0 ? `<button class="btn" style="padding:6px 10px;font-size:8px;" onclick="moveHoodie(${i},-1)" title="Move up">↑</button>` : ''}
+              ${i < DATA.hoodies.length-1 ? `<button class="btn" style="padding:6px 10px;font-size:8px;" onclick="moveHoodie(${i},1)" title="Move down">↓</button>` : ''}
+              <button class="btn btn-danger" style="padding:6px 14px;font-size:8px;" onclick="removeHoodie(${i})">Remove</button>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Piece Name</label>
+              <input type="text" value="${h.name}" onchange="DATA.hoodies[${i}].name = this.value; updateCardTitle(${i})" />
+            </div>
+            <div class="field">
+              <label>ID (e.g. 001)</label>
+              <input type="text" value="${h.id}" onchange="DATA.hoodies[${i}].id = this.value" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Colorway</label>
+              <input type="text" value="${h.colorway}" onchange="DATA.hoodies[${i}].colorway = this.value" />
+            </div>
+            <div class="field">
+              <label>Graphic / Branding</label>
+              <input type="text" value="${h.graphic}" onchange="DATA.hoodies[${i}].graphic = this.value" />
+            </div>
+          </div>
+          <div class="field-row full">
+            <div class="field">
+              <label>Fit / Material</label>
+              <input type="text" value="${h.fit}" onchange="DATA.hoodies[${i}].fit = this.value" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Images (3 views) — upload or type path</label>
+            <div class="img-paths">
+              ${h.images.map((img, j) => `
+                <div class="img-path-row">
+                  <img class="img-preview" id="img-prev-${i}-${j}" src="${img}" onerror="this.style.opacity=0.15;this.style.background='var(--surface)'" />
+                  <input type="text" id="img-path-${i}-${j}" value="${img.startsWith('data:') ? '(uploaded image)' : img}"
+                    onchange="DATA.hoodies[${i}].images[${j}] = this.value; document.getElementById('img-prev-${i}-${j}').src = this.value" />
+                  <label for="file-h-${i}-${j}" class="upload-label">↑ Upload</label>
+                  <input type="file" id="file-h-${i}-${j}" accept="image/*" style="display:none"
+                    onchange="trUploadHoodieImg(this, ${i}, ${j})" />
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateCardTitle(i) {
+      const t = document.querySelector(`#hoodie-card-${i} .card-title`);
+      if (t) t.textContent = DATA.hoodies[i].name || 'Hoodie ' + (i+1);
+    }
+
+    function addHoodie() {
+      const nextNum = DATA.hoodies.length + 1;
+      const id = String(nextNum).padStart(3, '0');
+      DATA.hoodies.push({
+        id,
+        name: 'New Piece',
+        colorway: '',
+        graphic: '',
+        fit: 'XL Baggy · Heavy Fleece',
+        images: ['Hoodie Mockups/', 'Hoodie Mockups/', 'Hoodie Mockups/']
+      });
+      renderHoodies();
+      const cards = document.querySelectorAll('#hoodies-list .card');
+      if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    function removeHoodie(i) {
+      if (!confirm(`Remove "${DATA.hoodies[i].name || 'this hoodie'}"?`)) return;
+      DATA.hoodies.splice(i, 1);
+      renderHoodies();
+    }
+
+    function moveHoodie(i, dir) {
+      const j = i + dir;
+      if (j < 0 || j >= DATA.hoodies.length) return;
+      [DATA.hoodies[i], DATA.hoodies[j]] = [DATA.hoodies[j], DATA.hoodies[i]];
+      renderHoodies();
+    }
+
+    // ── BRAND PHOTOS ──
+    function renderBrand() {
+      const el = document.getElementById('brand-list');
+      const photos = DATA.brandPhotos || [];
+      if (!photos.length) {
+        el.innerHTML = `<p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.25em;color:var(--muted);padding:20px 0;">No photos yet. Add one below.</p>`;
+        return;
+      }
+      el.innerHTML = photos.map((src, i) => `
+        <div class="brand-photo-row" id="bp-row-${i}">
+          <span class="brand-photo-num">${String(i+1).padStart(2,'0')}</span>
+          <img class="brand-photo-preview" id="bp-img-${i}" src="${src}" onerror="this.style.opacity=0.1" />
+          <input type="text" id="bp-path-${i}" value="${src.startsWith('data:') ? '(uploaded image)' : src}"
+            onchange="DATA.brandPhotos[${i}] = this.value; document.getElementById('bp-img-${i}').src = this.value" />
+          <label for="file-bp-${i}" class="upload-label" style="font-size:7px;padding:4px 8px;">↑</label>
+          <input type="file" id="file-bp-${i}" accept="image/*" style="display:none"
+            onchange="trUploadBrandImg(this, ${i})" />
+          <button class="btn" style="padding:5px 8px;font-size:10px;flex-shrink:0;" ${i===0?'disabled':''} onclick="moveBrandPhoto(${i},-1)" title="Move up">↑</button>
+          <button class="btn" style="padding:5px 8px;font-size:10px;flex-shrink:0;" ${i===photos.length-1?'disabled':''} onclick="moveBrandPhoto(${i},1)" title="Move down">↓</button>
+          <button class="btn btn-danger" style="padding:5px 10px;font-size:8px;flex-shrink:0;" onclick="removeBrandPhoto(${i})">✕</button>
+        </div>
+      `).join('');
+    }
+
+    function addBrandPhoto() {
+      if (!DATA.brandPhotos) DATA.brandPhotos = [];
+      DATA.brandPhotos.push('Hoodie Mockups/');
+      renderBrand();
+      const rows = document.querySelectorAll('.brand-photo-row');
+      if (rows.length) {
+        rows[rows.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+        rows[rows.length-1].querySelector('input').focus();
+      }
+    }
+
+    function removeBrandPhoto(i) {
+      DATA.brandPhotos.splice(i, 1);
+      renderBrand();
+    }
+
+    function moveBrandPhoto(i, dir) {
+      const j = i + dir;
+      if (j < 0 || j >= DATA.brandPhotos.length) return;
+      [DATA.brandPhotos[i], DATA.brandPhotos[j]] = [DATA.brandPhotos[j], DATA.brandPhotos[i]];
+      renderBrand();
+    }
+
+    // ── MUSIC ──
+    function renderMusic() {
+      const el = document.getElementById('music-list');
+      if (!DATA.music.length) {
+        el.innerHTML = `<p style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.25em;color:var(--muted);padding:20px 0;">No tracks yet. Add one below.</p>`;
+        return;
+      }
+      el.innerHTML = DATA.music.map((t, i) => `
+        <div class="card" id="music-card-${i}">
+          <div class="card-header">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span class="card-title">${t.title || 'Track ' + (i+1)}</span>
+              <span id="music-stored-${i}" style="font-family:'Space Mono',monospace;font-size:7px;letter-spacing:0.25em;text-transform:uppercase;color:var(--green);display:none;">● stored</span>
+            </div>
+            <button class="btn btn-danger" style="padding:6px 14px;font-size:8px;" onclick="removeTrack(${i})">Remove</button>
+          </div>
+          <div class="field-row triple">
+            <div class="field">
+              <label>Track Title</label>
+              <input type="text" value="${t.title}" onchange="DATA.music[${i}].title = this.value; document.querySelector('#music-card-${i} .card-title').textContent = this.value || 'Track ${i+1}'" />
+            </div>
+            <div class="field">
+              <label>Artist</label>
+              <input type="text" value="${t.artist}" onchange="DATA.music[${i}].artist = this.value" />
+            </div>
+            <div class="field">
+              <label>Duration (e.g. 3:42)</label>
+              <input type="text" value="${t.dur}" onchange="DATA.music[${i}].dur = this.value" />
+            </div>
+          </div>
+          <div class="field-row full">
+            <div class="field">
+              <label>Audio File — upload directly or type path</label>
+              <div style="display:flex;gap:8px;align-items:center;margin-top:2px;">
+                <input type="text" id="music-path-${i}" value="${t.file}"
+                  onchange="DATA.music[${i}].file = this.value" style="flex:1;" />
+                <label for="file-music-${i}" class="upload-label">↑ Upload Audio</label>
+                <input type="file" id="file-music-${i}" accept="audio/*"
+                  style="display:none" onchange="trUploadAudio(this, ${i})" />
+              </div>
+              <audio id="audio-preview-${i}" controls style="margin-top:10px;width:100%;height:32px;display:none;opacity:0.7;"></audio>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Check which tracks are already stored in IndexedDB and show indicators
+      DATA.music.forEach((t, i) => {
+        if (t.file) {
+          TRDB.has(t.file).then(found => {
+            const badge = document.getElementById('music-stored-' + i);
+            if (badge) badge.style.display = found ? 'inline' : 'none';
+            if (found) {
+              TRDB.getBlobUrl(t.file).then(url => {
+                const preview = document.getElementById('audio-preview-' + i);
+                if (preview && url) { preview.src = url; preview.style.display = 'block'; }
+              });
+            }
+          });
+        }
+      });
+    }
+
+    // ── ARCHIVE ──
+    function renderArchive() {
+      const el = document.getElementById('archive-list');
+      el.innerHTML = DATA.archive.map((p, i) => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">${p.title || 'Piece ' + (i+1)}</span>
+            <button class="btn btn-danger" style="padding:6px 14px;font-size:8px;" onclick="removePiece(${i})">Remove</button>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Title</label>
+              <input type="text" value="${p.title}" onchange="DATA.archive[${i}].title = this.value" />
+            </div>
+            <div class="field">
+              <label>Type</label>
+              <select onchange="DATA.archive[${i}].type = this.value">
+                <option ${p.type==='Poetry'?'selected':''}>Poetry</option>
+                <option ${p.type==='Spoken Word'?'selected':''}>Spoken Word</option>
+                <option ${p.type==='Photography'?'selected':''}>Photography</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Author</label>
+              <input type="text" value="${p.author}" onchange="DATA.archive[${i}].author = this.value" />
+            </div>
+            <div class="field">
+              <label>Date (e.g. April 2026)</label>
+              <input type="text" value="${p.date}" onchange="DATA.archive[${i}].date = this.value" />
+            </div>
+          </div>
+          <div class="field-row full">
+            <div class="field">
+              <label>Text (blank lines between stanzas)</label>
+              <textarea onchange="DATA.archive[${i}].excerpt = this.value">${p.excerpt}</textarea>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── SIGHTINGS ──
+    function renderSightings() {
+      const el = document.getElementById('sightings-list');
+      el.innerHTML = DATA.sightings.map((s, i) => `
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">${s.city || 'Sighting ' + (i+1)}</span>
+            <button class="btn btn-danger" style="padding:6px 14px;font-size:8px;" onclick="removeSighting(${i})">Remove</button>
+          </div>
+          <div class="field-row triple">
+            <div class="field">
+              <label>City</label>
+              <input type="text" value="${s.city}" onchange="DATA.sightings[${i}].city = this.value" />
+            </div>
+            <div class="field">
+              <label>Date</label>
+              <input type="text" value="${s.date}" onchange="DATA.sightings[${i}].date = this.value" />
+            </div>
+            <div class="field">
+              <label>Type</label>
+              <select onchange="DATA.sightings[${i}].type = this.value">
+                <option ${s.type==='wordmark'?'selected':''} value="wordmark">Wordmark</option>
+                <option ${s.type==='stacked'?'selected':''} value="stacked">Wordmark + Smile</option>
+                <option ${s.type==='smiley'?'selected':''} value="smiley">Smile only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ── SETTINGS ──
+    function renderSettings() {
+      const igEl = document.getElementById('ig-handle');
+      if (igEl) igEl.value = DATA.instagram || '@__thereiam';
+    }
+
+    /* ══════════════════════════════════════════════
+       ADD / REMOVE
+    ══════════════════════════════════════════════ */
+    function addTrack() {
+      DATA.music.push({ title: '', artist: 'ete', file: 'Music/', dur: '—' });
+      renderMusic();
+      const cards = document.querySelectorAll('#music-list .card');
+      if (cards.length) cards[cards.length-1].scrollIntoView({ behavior:'smooth', block:'center' });
+    }
+
+    function removeTrack(i) { DATA.music.splice(i, 1); renderMusic(); }
+
+    function addPiece() {
+      const id = 'a' + (DATA.archive.length + 1);
+      DATA.archive.push({ id, type: 'Poetry', title: '', author: '', date: '', excerpt: '' });
+      renderArchive();
+    }
+
+    function removePiece(i) { DATA.archive.splice(i, 1); renderArchive(); }
+
+    function addSighting() {
+      const id = 's' + (DATA.sightings.length + 1);
+      DATA.sightings.push({ id, city: '', date: '', type: 'wordmark' });
+      renderSightings();
+    }
+
+    function removeSighting(i) { DATA.sightings.splice(i, 1); renderSightings(); }
+
+    /* ══════════════════════════════════════════════
+       SAVE / RESET
+    ══════════════════════════════════════════════ */
+    function saveAll() {
+      // Capture instagram from settings field
+      const igEl = document.getElementById('ig-handle');
+      if (igEl) DATA.instagram = igEl.value;
+
+      localStorage.setItem('tr_content_overrides', JSON.stringify(DATA));
+      localStorage.setItem('tr_tracks_override', JSON.stringify(DATA.music));
+      showToast('Changes saved.');
+    }
+
+    function resetAll() {
+      if (!confirm('Reset everything to the original defaults? Your edits will be lost.')) return;
+      localStorage.removeItem('tr_content_overrides');
+      localStorage.removeItem('tr_tracks_override');
+      DATA = JSON.parse(JSON.stringify(THEREIAM_CONTENT));
+      renderAll();
+      showToast('Reset to defaults.');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 2800);
+    }
+
+    /* ══════════════════════════════════════════════
+       INIT
+    ══════════════════════════════════════════════ */
+    /* ══════════════════════════════════════════════
+       PAGES PREVIEW
+    ══════════════════════════════════════════════ */
+    const SITE_PAGES = [
+      { file: 'landing-preview.html', label: 'Landing — In Plain Sight', panel: 'pages'    },
+      { file: 'page-hoodies.html',    label: 'The Collection',            panel: 'hoodies'  },
+      { file: 'page-brand.html',      label: 'The Brand',                 panel: 'brand'    },
+      { file: 'page-archive.html',    label: 'Archive',                   panel: 'archive'  },
+      { file: 'page-mystery.html',    label: 'Origin',                    panel: 'archive'  },
+    ];
+
+    function renderPages() {
+      const grid = document.getElementById('pages-grid');
+      // Calculate iframe scale based on card width (≈280px visible / 1280px iframe)
+      const scale = 0.218;
+      const vpH   = Math.round(1280 * (10/16)); // 800px
+
+      grid.innerHTML = SITE_PAGES.map((pg, idx) => `
+        <div class="page-card">
+          <div class="page-preview-viewport" style="height:${Math.round(280 * (10/16))}px;" onclick="goToPanel('${pg.panel}')" title="Edit ${pg.label}">
+            <iframe
+              id="pg-frame-${idx}"
+              src="${pg.file}"
+              style="transform:scale(${scale});width:1280px;height:${vpH}px;pointer-events:none;"
+              sandbox="allow-same-origin allow-scripts"
+              loading="lazy"
+              title="${pg.label}">
+            </iframe>
+          </div>
+          <div class="page-card-footer">
+            <span class="page-card-name">${pg.label}</span>
+            <div class="page-card-actions">
+              <button onclick="goToPanel('${pg.panel}')">Edit →</button>
+              <a href="${pg.file}" target="_blank">Open ↗</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /* ══════════════════════════════════════════════
+       IMAGE UPLOAD
+    ══════════════════════════════════════════════ */
+    function trUploadHoodieImg(input, hi, ii) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        DATA.hoodies[hi].images[ii] = e.target.result;
+        const prev = document.getElementById('img-prev-' + hi + '-' + ii);
+        const path = document.getElementById('img-path-' + hi + '-' + ii);
+        if (prev) { prev.src = e.target.result; prev.style.opacity = 1; }
+        if (path) path.value = '(uploaded image)';
+        showToast('Image uploaded — hit Save changes.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function trUploadBrandImg(input, i) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        DATA.brandPhotos[i] = e.target.result;
+        const prev = document.getElementById('bp-img-' + i);
+        const path = document.getElementById('bp-path-' + i);
+        if (prev) { prev.src = e.target.result; prev.style.opacity = 1; }
+        if (path) path.value = '(uploaded image)';
+        showToast('Photo uploaded — hit Save changes.');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    /* ── Audio upload for music track ── */
+    async function trUploadAudio(input, i) {
+      const file = input.files[0];
+      if (!file) return;
+      showToast('Uploading audio…');
+      try {
+        // Use filename as the key; update DATA.music[i].file to match
+        const key = 'Music/' + file.name;
+        await TRDB.put(key, file);
+        DATA.music[i].file = key;
+        const pathEl = document.getElementById('music-path-' + i);
+        if (pathEl) pathEl.value = key;
+        // Show green stored badge
+        const badge = document.getElementById('music-stored-' + i);
+        if (badge) badge.style.display = 'inline';
+        // Show audio preview player
+        const blobUrl = await TRDB.getBlobUrl(key);
+        const preview = document.getElementById('audio-preview-' + i);
+        if (preview && blobUrl) { preview.src = blobUrl; preview.style.display = 'block'; }
+        saveAll();
+        showToast('Audio uploaded and saved — ready to play.');
+        renderMediaLibrary();
+      } catch (e) {
+        showToast('Upload failed — ' + e.message);
+      }
+    }
+
+    /* ── Media Library upload (any file type) ── */
+    async function trUploadMediaLibrary(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
+      showToast('Uploading ' + files.length + ' file(s)…');
+      try {
+        for (const file of files) {
+          await TRDB.put(file.name, file);
+        }
+        showToast(files.length + ' file(s) stored in Media Library.');
+        renderMediaLibrary();
+      } catch (e) {
+        showToast('Upload failed — ' + e.message);
+      }
+      input.value = '';
+    }
+
+    /* ── Render Media Library panel ── */
+    async function renderMediaLibrary() {
+      const el = document.getElementById('media-library-list');
+      if (!el) return;
+      const files = await TRDB.list();
+      if (!files.length) {
+        el.innerHTML = '<p style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--muted);letter-spacing:0.2em;">No files uploaded yet.</p>';
+        return;
+      }
+      // Sort by stored date descending
+      files.sort((a, b) => (b.stored || 0) - (a.stored || 0));
+
+      el.innerHTML = files.map(f => {
+        const kb   = (f.size / 1024).toFixed(0);
+        const mb   = (f.size / (1024*1024)).toFixed(1);
+        const size = f.size > 1024*1024 ? mb + ' MB' : kb + ' KB';
+        const isAudio = f.type.startsWith('audio/');
+        const isImage = f.type.startsWith('image/');
+        const date  = f.stored ? new Date(f.stored).toLocaleDateString('en-US', { month:'short', day:'numeric' }) : '—';
+        const typeTag = f.type.split('/')[1] || f.type;
+        return `
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);margin-bottom:8px;background:rgba(237,233,223,0.015);">
+            <span style="font-size:18px;flex-shrink:0;">${isAudio ? '♫' : isImage ? '◻' : '◈'}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:'Space Mono',monospace;font-size:10px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${f.name}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:3px;letter-spacing:0.15em;">${typeTag.toUpperCase()} &nbsp;·&nbsp; ${size} &nbsp;·&nbsp; ${date}</div>
+              ${isAudio ? `<div id="ml-preview-wrap-${encodeURIComponent(f.name)}" style="margin-top:8px;"></div>` : ''}
+              ${isImage ? `<div id="ml-preview-wrap-${encodeURIComponent(f.name)}" style="margin-top:8px;"></div>` : ''}
+            </div>
+            <div style="display:flex;gap:8px;flex-shrink:0;">
+              ${isAudio ? `<button onclick="mlPlayAudio('${f.name}')" style="background:none;border:1px solid rgba(196,150,42,0.3);color:rgba(196,150,42,0.7);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;padding:5px 10px;cursor:pointer;transition:all .2s;" onmouseenter="this.style.color='var(--ember)'" onmouseleave="this.style.color='rgba(196,150,42,.7)'">▶ Play</button>` : ''}
+              <button onclick="mlDeleteFile('${f.name}')" style="background:none;border:1px solid rgba(181,74,58,0.2);color:rgba(181,74,58,0.45);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;text-transform:uppercase;padding:5px 10px;cursor:pointer;transition:all .2s;" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='rgba(181,74,58,.45)'">Delete</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      // Load image previews
+      for (const f of files) {
+        if (f.type.startsWith('image/')) {
+          const wrap = document.getElementById('ml-preview-wrap-' + encodeURIComponent(f.name));
+          if (wrap) {
+            TRDB.getBlobUrl(f.name).then(url => {
+              if (url) wrap.innerHTML = `<img src="${url}" style="max-height:60px;max-width:100%;opacity:0.75;display:block;" />`;
+            });
+          }
+        }
+      }
+    }
+
+    let _mlAudio = null;
+    async function mlPlayAudio(name) {
+      const url = await TRDB.getBlobUrl(name);
+      if (!url) { showToast('File not found.'); return; }
+      if (_mlAudio) { _mlAudio.pause(); _mlAudio = null; }
+      _mlAudio = new Audio(url);
+      _mlAudio.volume = 0.8;
+      _mlAudio.play();
+      showToast('Playing: ' + name);
+    }
+
+    async function mlDeleteFile(name) {
+      if (!confirm('Delete "' + name + '" from the media library?')) return;
+      await TRDB.delete(name);
+      showToast('Deleted.');
+      renderMediaLibrary();
+      renderMusic(); // refresh stored badges on music panel
+    }
+
+    function renderAll() {
+      renderPages();
+      renderHoodies();
+      renderBrand();
+      renderMusic();
+      renderArchive();
+      renderSightings();
+      renderSettings();
+      renderSubmissions(); // also calls renderEmailList internally
+      renderMediaLibrary();
+    }
+
+    /* ══════════════════════════════════════════════
+       SUBMISSIONS
+    ══════════════════════════════════════════════ */
+    function getSubmissions() {
+      try { return JSON.parse(localStorage.getItem('tr_submissions') || '[]'); }
+      catch(e) { return []; }
+    }
+
+    function saveSubmissions(arr) {
+      localStorage.setItem('tr_submissions', JSON.stringify(arr));
+    }
+
+    function renderSubmissions() {
+      const subs = getSubmissions();
+
+      const countLbl = document.getElementById('sub-count-label');
+      if (countLbl) countLbl.textContent = `Submissions (${subs.length})`;
+
+      renderEmailList();
+
+      const container = document.getElementById('tr-submissions-list');
+      if (!container) return;
+      if (subs.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted);font-family:\'Space Mono\',monospace;font-size:9px;letter-spacing:0.2em;">No submissions yet.</p>';
+        return;
+      }
+
+      container.innerHTML = subs.map((s, i) => {
+        const date = new Date(s.timestamp).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+        const filesHTML = (s.files || []).map(f => {
+          const isImg = f.type && f.type.startsWith('image/') && f.data;
+          return isImg
+            ? `<div style="margin-top:8px;"><img src="${f.data}" style="max-width:100%;max-height:180px;display:block;opacity:0.85;" /></div><div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);margin-top:4px;letter-spacing:0.1em;">${f.name}</div>`
+            : `<div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);padding:8px 12px;background:rgba(237,233,223,0.03);border:1px solid var(--border);margin-top:6px;letter-spacing:0.1em;">📎 ${f.name} <span style="opacity:0.5;">(${(f.size/1024).toFixed(0)}kb)</span></div>`;
+        }).join('');
+
+        return `
+        <div id="sub-card-${i}" style="border:1px solid var(--border);padding:24px;margin-bottom:16px;background:rgba(237,233,223,0.015);">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+            <div>
+              <div style="font-size:14px;font-weight:500;color:var(--fg);margin-bottom:4px;">${s.name}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--dim);letter-spacing:0.15em;">${s.email || '(no email)'}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'Space Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.2em;text-transform:uppercase;">${s.category || '—'}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:8px;color:rgba(237,233,223,0.12);margin-top:4px;">${date}</div>
+            </div>
+          </div>
+          ${s.note ? `<div style="font-style:italic;color:var(--dim);font-size:13px;margin-bottom:14px;line-height:1.5;border-left:2px solid var(--border);padding-left:14px;">"${s.note}"</div>` : ''}
+          ${filesHTML}
+          <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+            <button onclick="trDeleteSub(${i})" style="background:none;border:1px solid rgba(181,74,58,0.2);color:rgba(181,74,58,0.4);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;text-transform:uppercase;padding:7px 14px;cursor:pointer;transition:all .2s;" onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='rgba(181,74,58,.4)'">Delete</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    /* ── Email List: row-by-row with individual delete ── */
+    function getEmailRemoved() {
+      try { return JSON.parse(localStorage.getItem('tr_email_removed') || '[]'); } catch(e) { return []; }
+    }
+    function saveEmailRemoved(arr) { localStorage.setItem('tr_email_removed', JSON.stringify(arr)); }
+
+    function renderEmailList() {
+      const subs    = getSubmissions();
+      const removed = getEmailRemoved();
+      // Pull emails from submissions only; filter out ones the user has removed
+      const all = [...new Set(subs.map(s => s.email).filter(Boolean))]
+        .filter(e => !removed.includes(e))
+        .sort();
+
+      const rows = document.getElementById('tr-email-rows');
+      const lbl  = document.getElementById('email-count-label');
+      if (lbl) lbl.textContent = `${all.length} address${all.length === 1 ? '' : 'es'}`;
+      if (!rows) return;
+
+      if (all.length === 0) {
+        rows.innerHTML = '<p style="font-family:\'Space Mono\',monospace;font-size:9px;color:var(--muted);letter-spacing:0.2em;">No emails yet.</p>';
+        return;
+      }
+
+      rows.innerHTML = all.map(email => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);margin-bottom:6px;background:rgba(237,233,223,0.015);">
+          <span style="font-family:'Space Mono',monospace;font-size:11px;color:var(--dim);letter-spacing:0.06em;">${email}</span>
+          <button onclick="trRemoveEmail('${email.replace(/'/g,"\\'")}')"
+            style="background:none;border:none;color:rgba(181,74,58,0.35);font-size:13px;cursor:pointer;padding:2px 6px;line-height:1;transition:color .2s;"
+            onmouseenter="this.style.color='var(--red)'" onmouseleave="this.style.color='rgba(181,74,58,.35)'"
+            title="Remove from list">✕</button>
+        </div>`).join('');
+    }
+
+    function trRemoveEmail(email) {
+      const removed = getEmailRemoved();
+      if (!removed.includes(email)) removed.push(email);
+      saveEmailRemoved(removed);
+      renderEmailList();
+      showToast('Email removed from list.');
+    }
+
+    function trCopyEmails() {
+      const subs    = getSubmissions();
+      const removed = getEmailRemoved();
+      const all = [...new Set(subs.map(s => s.email).filter(Boolean))]
+        .filter(e => !removed.includes(e)).sort();
+      if (!all.length) { showToast('No emails yet.'); return; }
+      const text = all.join('\n');
+      try {
+        navigator.clipboard.writeText(text).then(() => showToast('Emails copied!'));
+      } catch(e) {
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+        showToast('Emails copied!');
+      }
+    }
+
+    function trDeleteSub(i) {
+      if (!confirm('Remove this submission?')) return;
+      const subs = getSubmissions();
+      subs.splice(i, 1);
+      saveSubmissions(subs);
+      renderSubmissions();
+      showToast('Submission removed.');
+    }
+
+    function trClearAllSubs() {
+      if (!confirm('Delete ALL submissions? This cannot be undone.')) return;
+      localStorage.removeItem('tr_submissions');
+      renderSubmissions();
+      showToast('All submissions cleared.');
+    }
+
+    // Auto-unlock if already authenticated this session
+    if (sessionStorage.getItem('tr_admin_ok') === '1') {
+      document.getElementById('pw-screen').style.display = 'none';
+      document.getElementById('admin-ui').style.display  = 'block';
+      renderAll();
+    }
+  </script>
+</body>
+</html>

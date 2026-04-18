@@ -1,0 +1,116 @@
+/* ══════════════════════════════════════════════════════════════
+   THEREIAM — Global UI Polish
+   Linked on every page. Handles page fade-in, button feel,
+   link transitions, and click ripple.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Page fade-in on load ── */
+@keyframes tr-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+body {
+  animation: tr-fade-in 0.55s ease both;
+}
+
+/* ── Universal interactive feel ── */
+a, button, [onclick], label[for] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ── Ripple on click — applied to .tr-ripple elements ── */
+.tr-ripple {
+  position: relative;
+  overflow: hidden;
+}
+
+.tr-ripple::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0; left: 0;
+  background: currentColor;
+  opacity: 0;
+  border-radius: inherit;
+  transform: scale(0);
+  pointer-events: none;
+  transition: transform 0.35s ease, opacity 0.35s ease;
+}
+
+.tr-ripple:active::after {
+  transform: scale(2.5);
+  opacity: 0.08;
+  transition: 0s;
+}
+
+/* ── Gear button site-wide ── */
+.nav-gear, .arch-gear {
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+.nav-gear:hover, .arch-gear:hover {
+  transform: rotate(45deg);
+}
+.nav-gear:active, .arch-gear:active {
+  transform: rotate(90deg) scale(0.9);
+}
+
+/* ── Submit Your Work button ── */
+.pub-top-nav a.submit {
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease !important;
+}
+.pub-top-nav a.submit:active {
+  transform: scale(0.96);
+}
+
+/* ── Tab / filter button active feedback ── */
+.pub-tab, .filter-btn {
+  transition: all 0.2s ease !important;
+}
+.pub-tab:active, .filter-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Dark page nav links ── */
+.nav-links a {
+  transition: color 0.2s ease, opacity 0.2s ease !important;
+}
+.nav-links a:active {
+  opacity: 0.5;
+}
+
+/* ── Reveal / enter buttons (Origins page) ── */
+.reveal-btn {
+  transition: border-color 0.3s ease, color 0.3s ease, transform 0.15s ease !important;
+}
+.reveal-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Archive / landing navigation links ── */
+.pub-top-nav a {
+  transition: color 0.2s ease !important;
+}
+
+/* ── Smiley / footer hover ── */
+.footer-smiley, .footer-smile {
+  transition: opacity 0.3s ease, transform 0.3s ease !important;
+}
+.footer-smiley:hover, .footer-smile:hover {
+  transform: rotate(-10deg) scale(1.1);
+}
+
+/* ── Admin modal open/close feel ── */
+#admin-modal, #submit-modal {
+  transition: background 0.2s ease !important;
+}
+
+/* ── Smooth scrollbar across pages ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(128,118,108,0.18) transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-thumb { background: rgba(128,118,108,0.18); border-radius: 2px; }
+*::-webkit-scrollbar-track { background: transparent; }

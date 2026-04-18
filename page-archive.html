@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Archive — In Plain Sight</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="thereiam-player.css" />
+  <link rel="stylesheet" href="thereiam-ui.css" />
+  <style>
+    @font-face {
+      font-family: 'Northpoint';
+      src: url('North point.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f5f2eb;
+      --surface:   #edeae1;
+      --ink:       #1a1612;
+      --ink-mid:   #5c554c;
+      --ink-dim:   #a09890;
+      --rule:      rgba(26,22,18,0.10);
+      --ember:     #b8841f;
+      --ember-bg:  rgba(184,132,31,0.08);
+      --void:      #0e0b08;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── paper grain — tiled shift, no edge flicker ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      background-repeat: repeat;
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 9000;
+      animation: grain 1.4s steps(3) infinite;
+    }
+
+    @keyframes grain {
+      0%   { background-position: 0 0; }
+      33%  { background-position: 50px 25px; }
+      66%  { background-position: -35px 55px; }
+      100% { background-position: 25px -35px; }
+    }
+
+    /* ════════════════════════════
+       HEADER
+    ════════════════════════════ */
+    .arch-header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: var(--bg);
+      /* no bottom border — arch-filters provides it so active tabs sit flush */
+    }
+
+    .arch-topbar {
+      border-bottom: 1px solid var(--rule);
+      padding: 8px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .back-link {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--ink); }
+
+    .arch-gear {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--ink-dim);
+      opacity: 0.4;
+      padding: 2px 4px;
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+    .arch-gear:hover { opacity: 1; }
+
+    .arch-brand {
+      font-family: 'Northpoint', monospace;
+      font-size: 15px;
+      letter-spacing: 0.06em;
+      color: var(--ink);
+      text-decoration: none;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .arch-brand:hover { opacity: 1; }
+
+    .arch-nameplate {
+      padding: 28px 48px 20px;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .arch-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700;
+      line-height: 1.1;
+      color: var(--ink);
+    }
+
+    .arch-subtitle {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+
+    /* ── filter tabs ── */
+    .arch-filters {
+      padding: 0 48px;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--rule); /* container border — active tab overlaps it */
+    }
+
+    .filter-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 14px 20px;
+      margin-bottom: -1px; /* overlap container border so active underline sits flush */
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.2s, border-color 0.2s;
+    }
+
+    .filter-btn:hover { color: var(--ink-mid); }
+
+    .filter-btn.active {
+      color: var(--ink);
+      border-bottom-color: var(--ink);
+    }
+
+    /* ════════════════════════════
+       MAIN LAYOUT
+    ════════════════════════════ */
+    .arch-body {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 60px 48px 120px;
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 72px;
+      align-items: start;
+    }
+
+    .arch-main {}
+    .arch-sidebar {}
+
+    /* ── count label ── */
+    .arch-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      margin-bottom: 40px;
+      display: block;
+    }
+
+    /* ════════════════════════════
+       PIECES
+    ════════════════════════════ */
+    .piece {
+      padding-bottom: 52px;
+      margin-bottom: 52px;
+      border-bottom: 1px solid var(--rule);
+      opacity: 0;
+      transform: translateY(14px);
+      animation: riseIn 0.7s ease forwards;
+    }
+
+    .piece:last-child { border-bottom: none; margin-bottom: 0; }
+
+    @keyframes riseIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .piece-category {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 12px;
+    }
+
+    .piece-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(22px, 2.8vw, 32px);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--ink);
+      margin-bottom: 8px;
+    }
+
+    .piece-byline {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.14em;
+      color: var(--ink-dim);
+      margin-bottom: 28px;
+    }
+
+    .piece-body {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      line-height: 2;
+      color: var(--ink-mid);
+      font-style: italic;
+      white-space: pre-line;
+      margin-bottom: 28px;
+    }
+
+    .piece-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    /* ════════════════════════════
+       SMILE MECHANIC
+    ════════════════════════════ */
+    .smile-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .smile-btn {
+      width: 32px;
+      height: 32px;
+      background: none;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s, transform 0.15s;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .smile-btn img {
+      width: 14px;
+      height: 14px;
+      opacity: 0.3;
+      transition: opacity 0.2s;
+    }
+
+    .smile-btn:hover img { opacity: 0.7; }
+    .smile-btn:active { transform: scale(0.9); }
+
+    .smile-btn.lit {
+      border-color: var(--ember);
+      background: var(--ember-bg);
+    }
+
+    .smile-btn.lit img { opacity: 1; filter: sepia(1) saturate(2) hue-rotate(-10deg); }
+
+    .smile-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+      min-width: 24px;
+    }
+
+    /* ════════════════════════════
+       SIGHTINGS SECTION
+    ════════════════════════════ */
+    .sightings-section {
+      margin-bottom: 64px;
+    }
+
+    .section-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    .sightings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .sighting-card {
+      border: 1px solid var(--rule);
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .sighting-photo {
+      height: 180px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .wall-1 { background: linear-gradient(135deg, #1a1612 0%, #2c2218 50%, #1a1612 100%); }
+    .wall-2 { background: linear-gradient(135deg, #12151a 0%, #1c2430 50%, #12151a 100%); }
+    .wall-3 { background: linear-gradient(135deg, #0e1a10 0%, #182814 50%, #0e1a10 100%); }
+
+    .graffiti-tag {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.7;
+    }
+
+    .graffiti-tag img {
+      filter: invert(1);
+    }
+
+    .graffiti-tag .wordmark { width: 100px; }
+    .graffiti-tag .smiley-tag { width: 28px; }
+    .graffiti-tag .smiley-large { width: 52px; }
+
+    .card-footer {
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--rule);
+    }
+
+    .card-meta { display: flex; flex-direction: column; gap: 2px; }
+
+    .card-location {
+      font-family: 'Playfair Display', serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .card-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+    }
+
+    /* ── empty state ── */
+    .empty-state {
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-style: italic;
+      color: var(--ink-dim);
+      padding: 60px 0;
+      text-align: center;
+    }
+
+    /* ════════════════════════════
+       SIDEBAR
+    ════════════════════════════ */
+    .sidebar-block {
+      border-top: 2px solid var(--ink);
+      padding-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .sidebar-heading {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 14px;
+    }
+
+    .sidebar-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--ink-mid);
+      font-style: italic;
+    }
+
+    .sidebar-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-item:last-child { border-bottom: none; }
+
+    .sidebar-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .sidebar-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--ink-dim);
+    }
+
+    .submit-block {
+      background: var(--void);
+      padding: 28px 24px;
+      margin-top: 40px;
+    }
+
+    .submit-block p {
+      font-family: 'Playfair Display', serif;
+      font-size: 14px;
+      line-height: 1.8;
+      color: rgba(237,233,223,0.6);
+      font-style: italic;
+      margin-bottom: 18px;
+    }
+
+    .submit-btn {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ember);
+      background: none;
+      border: 1px solid rgba(184,132,31,0.35);
+      padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.25s;
+      width: 100%;
+    }
+
+    .submit-btn:hover { background: rgba(184,132,31,0.08); border-color: var(--ember); }
+
+    /* ════════════════════════════
+       FOOTER
+    ════════════════════════════ */
+    .arch-footer {
+      border-top: 2px solid var(--ink);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+    }
+
+    .footer-name {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .footer-motto {
+      font-family: 'Northpoint', monospace;
+      font-size: 15px;
+      color: var(--ink-mid);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-smiley {
+      width: 26px;
+      opacity: 0.14;
+      transition: opacity 0.3s;
+      cursor: default;
+    }
+
+    .footer-smiley:hover { opacity: 0.5; }
+
+    /* ── responsive ── */
+    @media (max-width: 900px) {
+      .arch-topbar, .arch-nameplate, .arch-filters { padding-left: 24px; padding-right: 24px; }
+      .arch-body { grid-template-columns: 1fr; padding: 40px 24px 100px; gap: 48px; }
+      .arch-sidebar { display: none; }
+      .sightings-grid { grid-template-columns: 1fr 1fr; }
+      .arch-footer { padding: 24px; }
+    }
+
+    @media (max-width: 560px) {
+      .sightings-grid { grid-template-columns: 1fr; }
+      .arch-nameplate { flex-direction: column; gap: 8px; }
+    }
+  </style>
+</head>
+<body class="tr-page">
+
+  <!-- ════ HEADER ════ -->
+  <header class="arch-header">
+
+    <div class="arch-topbar">
+      <a href="landing-preview.html" class="back-link">← In Plain Sight</a>
+      <a href="landing-preview.html" class="arch-brand">THEREIAM</a>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="#" onclick="trOpenSubmit();return false;" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ember);border:1px solid rgba(184,132,31,0.3);padding:3px 10px;text-decoration:none;transition:background 0.2s;" onmouseenter="this.style.background='rgba(184,132,31,0.08)'" onmouseleave="this.style.background='none'">Submit Your Work</a>
+        <button class="arch-gear" onclick="openAdminModal()" title="Admin">⚙</button>
+      </div>
+    </div>
+
+    <div class="arch-nameplate">
+      <h1 class="arch-title">The Archive</h1>
+      <span class="arch-subtitle">All works · All sightings</span>
+    </div>
+
+    <div class="arch-filters">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <button class="filter-btn" data-filter="Poetry">Poetry</button>
+      <button class="filter-btn" data-filter="Spoken Word">Spoken Word</button>
+      <button class="filter-btn" data-filter="Photography">Photography</button>
+      <button class="filter-btn" data-filter="Sounds">Sounds</button>
+    </div>
+
+  </header>
+
+
+  <!-- ════ BODY ════ -->
+  <div class="arch-body">
+
+    <main class="arch-main">
+      <span class="arch-count" id="arch-count"></span>
+
+      <!-- Sightings grid — shown on All + Sightings filter -->
+      <div id="sightings-zone" class="sightings-section"></div>
+
+      <!-- Text works — shown on All + Poetry/Spoken Word/Photography filters -->
+      <div id="pieces-zone"></div>
+    </main>
+
+    <aside class="arch-sidebar">
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">What Is This</h3>
+        <p class="sidebar-text">
+          Poems. Spoken word. Photographs. Sightings.
+          Anything that proves we were here — and that here was already everywhere.
+          The archive belongs to everyone who left something behind.
+        </p>
+      </div>
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">By Category</h3>
+        <div id="sidebar-counts"></div>
+      </div>
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">Sighted In</h3>
+        <div id="sidebar-cities"></div>
+      </div>
+
+      <div class="submit-block">
+        <p>Got something? A poem, a photo, a sighting in the wild — put it in.</p>
+        <button class="submit-btn" onclick="alert('Submissions open when the app launches. Stay close.')">
+          Submit Yours →
+        </button>
+      </div>
+
+    </aside>
+
+  </div>
+
+
+  <!-- ════ FOOTER ════ -->
+  <footer class="arch-footer" style="min-height:48px;"></footer>
+
+  <!-- ADMIN ACCESS MODAL -->
+  <div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:8000;align-items:center;justify-content:center;">
+    <div style="background:#09080d;border:1px solid rgba(237,233,223,0.08);padding:52px 44px;max-width:320px;width:90%;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.5em;text-transform:uppercase;color:rgba(237,233,223,0.18);margin-bottom:32px;">Admin Access</div>
+      <input id="admin-pw-input" type="password" placeholder="· · · · · · · ·"
+        style="width:100%;background:rgba(237,233,223,0.04);border:1px solid rgba(237,233,223,0.1);color:#ede9df;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:0.3em;padding:13px 16px;text-align:center;outline:none;margin-bottom:10px;"
+        onkeydown="if(event.key==='Enter') checkAdminPw()" />
+      <div id="admin-pw-err" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;color:#b54a3a;height:16px;margin-bottom:12px;"></div>
+      <button onclick="checkAdminPw()" style="width:100%;background:#2d6aad;border:none;color:#fff;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.4em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:10px;">Enter →</button>
+      <button onclick="closeAdminModal()" style="background:none;border:none;color:rgba(237,233,223,0.2);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;padding:8px;">cancel</button>
+    </div>
+  </div>
+  <script>
+    function openAdminModal()  { const m=document.getElementById('admin-modal'); m.style.display='flex'; setTimeout(()=>document.getElementById('admin-pw-input').focus(),50); }
+    function closeAdminModal() { document.getElementById('admin-modal').style.display='none'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-err').textContent=''; }
+    function checkAdminPw() {
+      const pw = document.getElementById('admin-pw-input').value;
+      const stored = localStorage.getItem('tr_admin_pw') || 'THEREIAM';
+      if (pw === stored) { sessionStorage.setItem('tr_admin_ok','1'); window.location.href='admin.html'; }
+      else { document.getElementById('admin-pw-err').textContent='wrong password'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-input').focus(); }
+    }
+  </script>
+
+
+  <!-- ════ AUDIO PLAYER ════ -->
+  <div id="tr-player" class="tr-hidden">
+    <div class="tr-left">
+      <button class="tr-btn" onclick="trPrev()">←</button>
+      <button class="tr-btn tr-play" id="tr-play" onclick="trToggle()">▶</button>
+      <button class="tr-btn" onclick="trNext(false)">→</button>
+      <div class="tr-progress-wrap" onclick="trSeek(event)" id="tr-bar">
+        <div class="tr-progress-track">
+          <div class="tr-progress-fill" id="tr-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tr-center">
+      <span class="tr-track-name" id="tr-name">–</span>
+      <span class="tr-sep">·</span>
+      <span class="tr-track-artist" id="tr-artist">–</span>
+    </div>
+    <div class="tr-right">
+      <span class="tr-time" id="tr-time">0:00</span>
+      <button class="tr-btn tr-queue-btn" id="tr-queue-toggle" onclick="trToggleQueue()">☰</button>
+    </div>
+    <div id="tr-queue-panel"></div>
+  </div>
+
+
+  <!-- ════ CONTENT + LOGIC ════ -->
+  <script src="thereiam-content.js"></script>
+  <script src="thereiam-media-db.js"></script>
+  <script src="thereiam-player.js"></script>
+  <script src="thereiam-submit.js"></script>
+  <script>
+    /* ─────────────────────────────────────────────
+       ARCHIVE — render + filter
+    ───────────────────────────────────────────── */
+
+    const sightingsZone = document.getElementById('sightings-zone');
+    const piecesZone    = document.getElementById('pieces-zone');
+    const countEl       = document.getElementById('arch-count');
+
+    // ── Smile state (persisted) ──
+    function getSmiles() {
+      try { return JSON.parse(localStorage.getItem('tr_smiles') || '{}'); } catch(e) { return {}; }
+    }
+    function saveSmiles(s) {
+      try { localStorage.setItem('tr_smiles', JSON.stringify(s)); } catch(e) {}
+    }
+
+    function smileIt(btn) {
+      const id     = btn.dataset.piece;
+      const smiles = getSmiles();
+      const count  = smiles[id] || 0;
+
+      if (btn.classList.contains('lit')) {
+        smiles[id] = Math.max(0, count - 1);
+        btn.classList.remove('lit');
+      } else {
+        smiles[id] = count + 1;
+        btn.classList.add('lit');
+      }
+
+      saveSmiles(smiles);
+      const el = document.getElementById('cnt-' + id);
+      if (el) el.textContent = smiles[id] || 0;
+    }
+
+    function smileHTML(id) {
+      const smiles = getSmiles();
+      const count  = smiles[id] || 0;
+      const lit    = count > 0 ? ' lit' : '';
+      return `
+        <div class="smile-wrap">
+          <button class="smile-btn${lit}" data-piece="${id}" onclick="smileIt(this)" aria-label="Smile">
+            <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+          </button>
+          <span class="smile-count" id="cnt-${id}">${count}</span>
+        </div>`;
+    }
+
+    // ── Render sightings ──
+    function renderSightings(items) {
+      if (!items || !items.length) {
+        sightingsZone.style.display = 'none';
+        return;
+      }
+      const wallClasses = ['wall-1','wall-2','wall-3'];
+      const typeLayout  = {
+        wordmark: `<div class="graffiti-tag"><img class="wordmark" src="THEREIAM LOGOS/THEREIAM LOGO1.png" alt="" /></div>`,
+        stacked:  `<div class="graffiti-tag stacked"><img class="smiley-tag" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" /><img class="wordmark" src="THEREIAM LOGOS/THEREIAM LOGO1.png" alt="" /></div>`,
+        smiley:   `<div class="graffiti-tag"><img class="smiley-large" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" /></div>`,
+      };
+
+      const cards = items.map((s, i) => {
+        const wall = wallClasses[i % 3];
+        const tag  = typeLayout[s.type] || typeLayout.wordmark;
+        return `
+          <div class="sighting-card">
+            <div class="sighting-photo ${wall}">${tag}</div>
+            <div class="card-footer">
+              <div class="card-meta">
+                <span class="card-location">${s.city}</span>
+                <span class="card-date">${s.date}</span>
+              </div>
+              ${smileHTML(s.id)}
+            </div>
+          </div>`;
+      }).join('');
+
+      sightingsZone.innerHTML = `
+        <span class="section-label">THEREIAM</span>
+        <div class="sightings-grid">${cards}</div>`;
+    }
+
+    // ── Render text pieces ──
+    function renderPieces(items) {
+      if (!items || !items.length) {
+        piecesZone.innerHTML = `<p class="empty-state">Nothing here yet — but it's coming.</p>`;
+        return;
+      }
+      piecesZone.innerHTML = items.map((p, i) => `
+        <article class="piece" style="animation-delay: ${0.1 + i * 0.12}s;">
+          <div class="piece-category">${p.type}</div>
+          <h2 class="piece-title">${p.title}</h2>
+          <div class="piece-byline">${p.author} &nbsp;·&nbsp; ${p.date}</div>
+          <div class="piece-body">${p.excerpt}</div>
+          <div class="piece-footer">
+            ${smileHTML(p.id)}
+          </div>
+        </article>`).join('');
+    }
+
+    // ── Render sidebar stats ──
+    function renderSidebar() {
+      const archive   = THEREIAM_CONTENT.archive   || [];
+      const sightings = THEREIAM_CONTENT.sightings || [];
+
+      // category counts
+      const cats = {};
+      archive.forEach(p => { cats[p.type] = (cats[p.type] || 0) + 1; });
+      cats['Sounds'] = (THEREIAM_CONTENT.music || []).length;
+
+      document.getElementById('sidebar-counts').innerHTML =
+        Object.entries(cats).map(([k,v]) => `
+          <div class="sidebar-item">
+            <span class="sidebar-label">${k}</span>
+            <span class="sidebar-num">${v}</span>
+          </div>`).join('');
+
+      // city list
+      const cities = [...new Set(sightings.map(s => s.city))];
+      document.getElementById('sidebar-cities').innerHTML =
+        cities.length
+          ? cities.map(c => `
+              <div class="sidebar-item">
+                <span class="sidebar-label">${c}</span>
+              </div>`).join('')
+          : `<div class="sidebar-item"><span class="sidebar-label">None documented yet</span></div>`;
+    }
+
+    // ── Render sounds (music tracks) ──
+    function renderSounds(tracks) {
+      if (!tracks || !tracks.length) {
+        piecesZone.innerHTML = `<p class="empty-state">Music drops when it's ready. Stay close.</p>`;
+        return;
+      }
+      piecesZone.innerHTML = `
+        <span class="section-label" style="display:block;margin-bottom:24px;">From the Sound</span>
+        ${tracks.map((t, i) => `
+          <article class="piece" style="animation-delay:${0.1 + i * 0.1}s; padding-bottom:32px; margin-bottom:32px;">
+            <div class="piece-category">Sound</div>
+            <h2 class="piece-title" style="font-size:clamp(18px,2.2vw,26px);">${t.title}</h2>
+            <div class="piece-byline">${t.artist || 'THEREIAM'} &nbsp;·&nbsp; ${t.dur || '–:––'}</div>
+            <div class="piece-footer">
+              <button
+                onclick="trJump(${i}); trToggle();"
+                style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;background:none;border:1px solid rgba(26,22,18,.15);padding:9px 20px;cursor:pointer;color:var(--ink-mid);transition:all .2s;"
+                onmouseover="this.style.borderColor='var(--ink)';this.style.color='var(--ink)'"
+                onmouseout="this.style.borderColor='rgba(26,22,18,.15)';this.style.color='var(--ink-mid)'"
+              >▶ Play</button>
+            </div>
+          </article>`).join('')}`;
+    }
+
+    // ── Filter logic ──
+    let currentFilter = 'all';
+
+    function applyFilter(filter) {
+      currentFilter = filter;
+      const archive   = THEREIAM_CONTENT.archive   || [];
+      const sightings = THEREIAM_CONTENT.sightings || [];
+      const music     = THEREIAM_CONTENT.music     || [];
+
+      const showSightings = filter === 'all';
+      const showSounds    = filter === 'Sounds';
+      const showPieces    = filter !== 'Sounds';
+
+      // filter pieces
+      const filteredPieces = (filter === 'all')
+        ? archive
+        : showPieces
+          ? archive.filter(p => p.type === filter)
+          : [];
+
+      // render zones
+      if (showSightings) renderSightings(sightings);
+      else sightingsZone.innerHTML = '';
+
+      if (showSounds) {
+        renderSounds(music);
+      } else if (showPieces) {
+        renderPieces(filteredPieces);
+      } else {
+        piecesZone.innerHTML = '';
+      }
+
+      // count label
+      let total = 0;
+      if (showSightings) total += sightings.length;
+      if (showSounds)    total  = music.length;
+      if (showPieces && !showSounds) total += filteredPieces.length;
+
+      const label = filter === 'all' ? 'Everything' : filter;
+      countEl.textContent = `${total} ${label.toLowerCase()} in the archive`;
+    }
+
+    // ── Filter buttons ──
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    // ── Init ──
+    renderSidebar();
+    applyFilter('all');
+  </script>
+
+</body>
+</html>

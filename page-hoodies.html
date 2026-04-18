@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THEREIAM — Pilot Collection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&family=Space+Mono:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="thereiam-player.css" />
+  <link rel="stylesheet" href="thereiam-ui.css" />
+  <style>
+    @font-face {
+      font-family: 'Northpoint';
+      src: url('North point.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --void:   #07060a;
+      --void2:  #0b0a0e;
+      --fg:     #e8e4dc;
+      --dim:    rgba(232,228,220,0.35);
+      --muted:  rgba(232,228,220,0.12);
+      --blue:   #1a4a8a;
+      --blue-b: #2d6aad;
+      --ember:  #c4962a;
+      --rule:   rgba(232,228,220,0.07);
+    }
+
+    html {
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--void);
+      color: var(--fg);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      overflow-x: hidden;
+    }
+
+    /* ── starfield canvas ── */
+    #starfield {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── scanline texture ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.06) 3px,
+        rgba(0,0,0,0.06) 4px
+      );
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.35;
+    }
+
+    /* ── film grain — tiled shift, no edge artifacts ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      background-repeat: repeat;
+      opacity: 0.042;
+      pointer-events: none;
+      z-index: 2;
+      animation: grain 1.0s steps(3) infinite;
+    }
+
+    @keyframes grain {
+      0%   { background-position: 0 0; }
+      33%  { background-position: 45px 20px; }
+      66%  { background-position: -30px 50px; }
+      100% { background-position: 20px -30px; }
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 22px 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 500;
+      background: linear-gradient(to bottom, rgba(7,6,10,0.9) 0%, transparent 100%);
+    }
+
+    .nav-home {
+      font-family: 'Northpoint', 'Space Mono', monospace;
+      font-size: 17px;
+      letter-spacing: 0.08em;
+      color: var(--fg);
+      text-decoration: none;
+      opacity: 0.9;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+    }
+
+    .nav-links a {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover { color: var(--fg); }
+    .nav-links a.active { color: var(--fg); }
+
+    .nav-gear {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--dim);
+      opacity: 0.45;
+      padding: 2px 4px;
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+    .nav-gear:hover { opacity: 1; }
+
+    /* ── ENTRY SECTION ── */
+    .entry {
+      position: relative;
+      z-index: 10;
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 48px;
+    }
+
+    .entry-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.55em;
+      text-transform: uppercase;
+      color: var(--blue-b);
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: riseIn 1s ease 0.4s forwards;
+    }
+
+    .entry-title {
+      font-family: 'Northpoint', sans-serif;
+      font-size: clamp(52px, 10vw, 140px);
+      letter-spacing: 0.05em;
+      color: var(--fg);
+      line-height: 1;
+      opacity: 0;
+      animation: riseIn 1.2s ease 0.7s forwards;
+    }
+
+    .entry-vol {
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(10px, 1.2vw, 14px);
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-top: 24px;
+      opacity: 0;
+      animation: riseIn 1s ease 1.1s forwards;
+    }
+
+    .entry-rule {
+      width: 1px;
+      height: 60px;
+      background: linear-gradient(to bottom, var(--dim), transparent);
+      margin: 52px auto 0;
+      opacity: 0;
+      animation: riseIn 1s ease 1.6s forwards;
+    }
+
+    .entry-scroll {
+      position: absolute;
+      bottom: 44px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(232,228,220,0.18);
+      opacity: 0;
+      animation: riseIn 1s ease 2s forwards, breathe 3s ease 3s infinite;
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes breathe {
+      0%,100% { opacity: 0.18; transform: translateY(0); }
+      50%      { opacity: 0.38; transform: translateY(5px); }
+    }
+
+    /* ── PIECE PANELS ── */
+    .piece-panel {
+      position: relative;
+      z-index: 10;
+      height: 100vh;
+      scroll-snap-align: start;
+      display: grid;
+      grid-template-columns: 38% 62%;
+      align-items: stretch;
+      border-top: 1px solid var(--rule);
+      overflow: hidden;
+    }
+
+    /* left — info */
+    .piece-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 52px 80px 52px;
+      border-right: 1px solid var(--rule);
+      position: relative;
+    }
+
+    .piece-number {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--blue-b);
+      margin-bottom: 32px;
+    }
+
+    .piece-name {
+      font-size: clamp(32px, 4.5vw, 58px);
+      font-weight: 300;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+      margin-bottom: 36px;
+    }
+
+    .piece-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 56px;
+    }
+
+    .meta-row {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--dim);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .meta-dot {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--blue-b);
+      flex-shrink: 0;
+    }
+
+    /* image cycling controls (left column bottom) */
+    .piece-controls {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-top: auto;
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: 1px solid var(--rule);
+      color: var(--dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 10px 16px;
+      transition: border-color 0.3s, color 0.3s;
+      letter-spacing: 0.1em;
+    }
+
+    .ctrl-btn:hover {
+      border-color: rgba(232,228,220,0.3);
+      color: var(--fg);
+    }
+
+    .ctrl-dots {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .ctrl-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--rule);
+      cursor: pointer;
+      transition: background 0.3s, transform 0.3s;
+      border: none;
+      padding: 0;
+    }
+
+    .ctrl-dot.active {
+      background: var(--fg);
+      transform: scale(1.4);
+    }
+
+    /* right — image */
+    .piece-gallery {
+      position: relative;
+      overflow: hidden;
+      background: var(--void2);
+    }
+
+    .piece-shot {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.7s ease;
+    }
+
+    .piece-shot.active { opacity: 1; }
+
+    .piece-shot img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center top;
+      filter: brightness(0.92) contrast(1.04);
+    }
+
+    /* vignette over image */
+    .piece-gallery::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(7,6,10,0.55) 0%, transparent 35%),
+        linear-gradient(to top, rgba(7,6,10,0.4) 0%, transparent 30%);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    /* piece number on image (large, very dim watermark) */
+    .image-watermark {
+      position: absolute;
+      bottom: 40px;
+      right: 44px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(232,228,220,0.15);
+      z-index: 3;
+    }
+
+    /* slide counter */
+    .slide-counter {
+      position: absolute;
+      top: 40px;
+      right: 44px;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.3em;
+      color: rgba(232,228,220,0.2);
+      z-index: 3;
+    }
+
+    /* ── INTER-PANEL DIVIDERS (thin bars between pieces) ── */
+    .panel-divider {
+      position: relative;
+      z-index: 10;
+      height: 1px;
+      background: var(--rule);
+      scroll-snap-align: none;
+    }
+
+    /* ── CTA ── */
+    .cta-panel {
+      position: relative;
+      z-index: 10;
+      height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 48px;
+      border-top: 1px solid var(--rule);
+    }
+
+    .cta-smiley {
+      width: 56px;
+      filter: invert(1) opacity(0.15);
+      margin-bottom: 52px;
+      animation: slowSpin 24s linear infinite;
+    }
+
+    @keyframes slowSpin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    .cta-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 28px;
+    }
+
+    .cta-headline {
+      font-size: clamp(36px, 6vw, 80px);
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: var(--fg);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .cta-sub {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(15px, 1.8vw, 22px);
+      color: var(--dim);
+      margin-bottom: 64px;
+      letter-spacing: 0.05em;
+    }
+
+    .cta-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: var(--fg);
+      text-decoration: none;
+      border: 1px solid rgba(232,228,220,0.2);
+      padding: 18px 36px;
+      transition: border-color 0.4s, background 0.4s;
+    }
+
+    .cta-link:hover {
+      border-color: var(--blue-b);
+      background: rgba(26,74,138,0.08);
+    }
+
+    .cta-arrow {
+      opacity: 0.4;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+
+    .cta-link:hover .cta-arrow {
+      transform: translateX(4px);
+      opacity: 0.8;
+    }
+
+    .cta-footer-note {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(232,228,220,0.12);
+      margin-top: 52px;
+    }
+
+    /* ── PANEL ENTRY ANIMATIONS ── */
+    .piece-panel .piece-info > * {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .piece-panel.in-view .piece-info > * {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .piece-panel.in-view .piece-number   { transition-delay: 0s; }
+    .piece-panel.in-view .piece-name     { transition-delay: 0.12s; }
+    .piece-panel.in-view .piece-meta     { transition-delay: 0.22s; }
+    .piece-panel.in-view .piece-vibe     { transition-delay: 0.32s; }
+    .piece-panel.in-view .piece-controls { transition-delay: 0.44s; }
+
+    .piece-panel .piece-gallery {
+      opacity: 0;
+      transform: scale(1.02);
+      transition: opacity 1s ease, transform 1s ease;
+    }
+
+    .piece-panel.in-view .piece-gallery {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ── SCROLL PROGRESS ── */
+    .scroll-progress {
+      position: fixed;
+      right: 28px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 500;
+    }
+
+    .progress-pip {
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--rule);
+      cursor: pointer;
+      transition: background 0.4s, transform 0.4s;
+    }
+
+    .progress-pip.active {
+      background: var(--fg);
+      transform: scale(1.6);
+    }
+
+    /* ── FOOTER ── */
+    .site-footer {
+      position: relative;
+      z-index: 10;
+      padding: 48px 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--rule);
+      scroll-snap-align: none;
+    }
+
+    .footer-copy {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: rgba(232,228,220,0.15);
+    }
+
+    .footer-smile {
+      width: 28px;
+      filter: invert(1) opacity(0.1);
+      transition: opacity 0.3s;
+    }
+
+    .footer-smile:hover { filter: invert(1) opacity(0.35); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 18px 24px; }
+      .nav-links { gap: 18px; }
+
+      .piece-panel {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 55vh;
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .piece-info {
+        padding: 80px 24px 40px;
+        border-right: none;
+        border-bottom: 1px solid var(--rule);
+      }
+
+      .piece-gallery { min-height: 55vw; }
+
+      .entry { padding: 80px 24px; }
+      .cta-panel { padding: 80px 24px; }
+      .scroll-progress { display: none; }
+      .site-footer { padding: 36px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── STARFIELD ── -->
+  <canvas id="starfield"></canvas>
+
+  <!-- ── NAV ── -->
+  <nav>
+    <a href="landing-preview.html" class="nav-home">THEREIAM</a>
+    <div class="nav-links">
+      <a href="landing-preview.html">Archive</a>
+      <a href="page-hoodies.html" class="active">Hoodies</a>
+      <a href="page-mystery.html">Origin</a>
+      <a href="#" onclick="trOpenSubmit();return false;">Submit Your Work</a>
+      <button class="nav-gear" onclick="openAdminModal()" title="Admin">⚙</button>
+    </div>
+  </nav>
+
+  <!-- ── SCROLL PROGRESS PIPS ── -->
+  <div class="scroll-progress" id="progressPips">
+    <div class="progress-pip active" data-section="0" title="Entry"></div>
+    <div class="progress-pip" data-section="1" title="Plain Sight"></div>
+    <div class="progress-pip" data-section="2" title="The Ghost"></div>
+    <div class="progress-pip" data-section="3" title="The Relic"></div>
+    <div class="progress-pip" data-section="4" title="Ember"></div>
+    <div class="progress-pip" data-section="5" title="Own a piece"></div>
+  </div>
+
+  <!-- ── ENTRY ── -->
+  <section class="entry" id="s0">
+    <div class="entry-label">Pilot Collection</div>
+    <div class="entry-title">THEREIAM</div>
+    <div class="entry-vol">Vol. 01 &nbsp;·&nbsp; Four Pieces &nbsp;·&nbsp; One Size</div>
+    <div class="entry-rule"></div>
+    <div class="entry-scroll">scroll</div>
+  </section>
+
+  <!-- ── 001 — PLAIN SIGHT ── -->
+  <section class="piece-panel" id="s1" data-panel>
+    <div class="piece-info">
+      <div class="piece-number">001 &nbsp;/&nbsp; Pilot Collection Vol. 1</div>
+      <div class="piece-name">Plain<br/>Sight</div>
+      <div class="piece-meta">
+        <div class="meta-row"><span class="meta-dot"></span>Black / White</div>
+        <div class="meta-row"><span class="meta-dot"></span>Wordmark + Smiley</div>
+        <div class="meta-row"><span class="meta-dot"></span>XL Baggy · Heavy Fleece</div>
+      </div>
+      <div class="piece-controls">
+        <button class="ctrl-btn" onclick="prevShot(this)" aria-label="Previous">←</button>
+        <div class="ctrl-dots">
+          <button class="ctrl-dot active" onclick="goToShot(this,0)" aria-label="View 1"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,1)" aria-label="View 2"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,2)" aria-label="View 3"></button>
+        </div>
+        <button class="ctrl-btn" onclick="nextShot(this)" aria-label="Next">→</button>
+      </div>
+    </div>
+    <div class="piece-gallery" onclick="nextShotFromGallery(this)">
+      <div class="piece-shot active"><img src="Hoodie Mockups/hoodie-001IMG_1395.jpg" alt="Plain Sight — 1" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-001IMG_1396.jpg" alt="Plain Sight — 2" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-001IMG_1400.jpg" alt="Plain Sight — 3" /></div>
+      <div class="slide-counter" id="counter-s1">1 / 3</div>
+      <div class="image-watermark">Plain Sight · 001</div>
+    </div>
+  </section>
+
+  <!-- ── 002 — THE GHOST ── -->
+  <section class="piece-panel" id="s2" data-panel>
+    <div class="piece-info">
+      <div class="piece-number">002 &nbsp;/&nbsp; Pilot Collection Vol. 1</div>
+      <div class="piece-name">The<br/>Ghost</div>
+      <div class="piece-meta">
+        <div class="meta-row"><span class="meta-dot"></span>Charcoal / Charcoal</div>
+        <div class="meta-row"><span class="meta-dot"></span>Tonal — invisible branding</div>
+        <div class="meta-row"><span class="meta-dot"></span>XL Baggy · Heavy Fleece</div>
+      </div>
+      <div class="piece-controls">
+        <button class="ctrl-btn" onclick="prevShot(this)" aria-label="Previous">←</button>
+        <div class="ctrl-dots">
+          <button class="ctrl-dot active" onclick="goToShot(this,0)" aria-label="View 1"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,1)" aria-label="View 2"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,2)" aria-label="View 3"></button>
+        </div>
+        <button class="ctrl-btn" onclick="nextShot(this)" aria-label="Next">→</button>
+      </div>
+    </div>
+    <div class="piece-gallery" onclick="nextShotFromGallery(this)">
+      <div class="piece-shot active"><img src="Hoodie Mockups/hoodie-002IMG_1401.jpg" alt="The Ghost — 1" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-002IMG_1402.jpg" alt="The Ghost — 2" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-002IMG_1403.jpg" alt="The Ghost — 3" /></div>
+      <div class="slide-counter" id="counter-s2">1 / 3</div>
+      <div class="image-watermark">The Ghost · 002</div>
+    </div>
+  </section>
+
+  <!-- ── 003 — THE RELIC ── -->
+  <section class="piece-panel" id="s3" data-panel>
+    <div class="piece-info">
+      <div class="piece-number">003 &nbsp;/&nbsp; Pilot Collection Vol. 1</div>
+      <div class="piece-name">The<br/>Relic</div>
+      <div class="piece-meta">
+        <div class="meta-row"><span class="meta-dot"></span>Army Olive</div>
+        <div class="meta-row"><span class="meta-dot"></span>Distressed skull graphic</div>
+        <div class="meta-row"><span class="meta-dot"></span>Skull chain drawstring</div>
+      </div>
+      <div class="piece-controls">
+        <button class="ctrl-btn" onclick="prevShot(this)" aria-label="Previous">←</button>
+        <div class="ctrl-dots">
+          <button class="ctrl-dot active" onclick="goToShot(this,0)" aria-label="View 1"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,1)" aria-label="View 2"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,2)" aria-label="View 3"></button>
+        </div>
+        <button class="ctrl-btn" onclick="nextShot(this)" aria-label="Next">→</button>
+      </div>
+    </div>
+    <div class="piece-gallery" onclick="nextShotFromGallery(this)">
+      <div class="piece-shot active"><img src="Hoodie Mockups/hoodie-003IMG_1397.jpg" alt="The Relic — 1" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-003IMG_1398.jpg" alt="The Relic — 2" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-003IMG_1399.jpg" alt="The Relic — 3" /></div>
+      <div class="slide-counter" id="counter-s3">1 / 3</div>
+      <div class="image-watermark">The Relic · 003</div>
+    </div>
+  </section>
+
+  <!-- ── 004 — EMBER ── -->
+  <section class="piece-panel" id="s4" data-panel>
+    <div class="piece-info">
+      <div class="piece-number">004 &nbsp;/&nbsp; Pilot Collection Vol. 1</div>
+      <div class="piece-name">Ember</div>
+      <div class="piece-meta">
+        <div class="meta-row"><span class="meta-dot"></span>Black / Orange</div>
+        <div class="meta-row"><span class="meta-dot"></span>Wordmark + Smiley</div>
+        <div class="meta-row"><span class="meta-dot"></span>XL Baggy · Heavy Fleece</div>
+      </div>
+      <div class="piece-controls">
+        <button class="ctrl-btn" onclick="prevShot(this)" aria-label="Previous">←</button>
+        <div class="ctrl-dots">
+          <button class="ctrl-dot active" onclick="goToShot(this,0)" aria-label="View 1"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,1)" aria-label="View 2"></button>
+          <button class="ctrl-dot" onclick="goToShot(this,2)" aria-label="View 3"></button>
+        </div>
+        <button class="ctrl-btn" onclick="nextShot(this)" aria-label="Next">→</button>
+      </div>
+    </div>
+    <div class="piece-gallery" onclick="nextShotFromGallery(this)">
+      <div class="piece-shot active"><img src="Hoodie Mockups/hoodie-004IMG_1404.jpg" alt="Ember — 1" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-004IMG_1405.jpg" alt="Ember — 2" /></div>
+      <div class="piece-shot"><img src="Hoodie Mockups/hoodie-004IMG_1406.jpg" alt="Ember — 3" /></div>
+      <div class="slide-counter" id="counter-s4">1 / 3</div>
+      <div class="image-watermark">Ember · 004</div>
+    </div>
+  </section>
+
+  <!-- ── CTA ── -->
+  <section class="cta-panel" id="s5">
+    <img class="cta-smiley" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+    <div class="cta-label">To acquire a piece</div>
+    <div class="cta-headline">One way in.</div>
+    <div class="cta-sub">Reach us directly. No cart. No checkout.</div>
+    <a href="https://instagram.com/__thereiam" target="_blank" class="cta-link">
+      @__thereiam
+      <span class="cta-arrow">→</span>
+    </a>
+
+    <div class="cta-footer-note">DM on Instagram · Pilot Collection Vol. 1 · While pieces last</div>
+  </section>
+
+  <!-- ── FOOTER ── -->
+  <footer class="site-footer">
+    <img class="footer-smile" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+  </footer>
+
+  <!-- ADMIN ACCESS MODAL -->
+  <div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:8000;align-items:center;justify-content:center;">
+    <div style="background:#09080d;border:1px solid rgba(237,233,223,0.08);padding:52px 44px;max-width:320px;width:90%;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.5em;text-transform:uppercase;color:rgba(237,233,223,0.18);margin-bottom:32px;">Admin Access</div>
+      <input id="admin-pw-input" type="password" placeholder="· · · · · · · ·"
+        style="width:100%;background:rgba(237,233,223,0.04);border:1px solid rgba(237,233,223,0.1);color:#ede9df;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:0.3em;padding:13px 16px;text-align:center;outline:none;margin-bottom:10px;"
+        onkeydown="if(event.key==='Enter') checkAdminPw()" />
+      <div id="admin-pw-err" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;color:#b54a3a;height:16px;margin-bottom:12px;"></div>
+      <button onclick="checkAdminPw()" style="width:100%;background:#2d6aad;border:none;color:#fff;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.4em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:10px;">Enter →</button>
+      <button onclick="closeAdminModal()" style="background:none;border:none;color:rgba(237,233,223,0.2);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;padding:8px;">cancel</button>
+    </div>
+  </div>
+  <script>
+    function openAdminModal()  { const m=document.getElementById('admin-modal'); m.style.display='flex'; setTimeout(()=>document.getElementById('admin-pw-input').focus(),50); }
+    function closeAdminModal() { document.getElementById('admin-modal').style.display='none'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-err').textContent=''; }
+    function checkAdminPw() {
+      const pw = document.getElementById('admin-pw-input').value;
+      const stored = localStorage.getItem('tr_admin_pw') || 'THEREIAM';
+      if (pw === stored) { sessionStorage.setItem('tr_admin_ok','1'); window.location.href='admin.html'; }
+      else { document.getElementById('admin-pw-err').textContent='wrong password'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-input').focus(); }
+    }
+  </script>
+
+  <!-- ══ THEREIAM AUDIO PLAYER BAR ══ -->
+  <div id="tr-player" class="tr-hidden">
+    <div class="tr-left">
+      <button class="tr-btn" onclick="trPrev()" title="Previous">←</button>
+      <button class="tr-btn tr-play" id="tr-play" onclick="trToggle()" title="Play / Pause">▶</button>
+      <button class="tr-btn" onclick="trNext(false)" title="Next">→</button>
+      <div class="tr-progress-wrap" onclick="trSeek(event)" id="tr-bar">
+        <div class="tr-progress-track">
+          <div class="tr-progress-fill" id="tr-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="tr-center">
+      <span class="tr-track-name" id="tr-name">–</span>
+      <span class="tr-sep">·</span>
+      <span class="tr-track-artist" id="tr-artist">–</span>
+    </div>
+    <div class="tr-right">
+      <span class="tr-time" id="tr-time">0:00</span>
+      <button class="tr-btn tr-queue-btn" id="tr-queue-toggle" onclick="trToggleQueue()" title="Queue">☰</button>
+    </div>
+    <div id="tr-queue-panel"></div>
+  </div>
+  <script src="thereiam-content.js"></script>
+  <script src="thereiam-media-db.js"></script>
+  <script src="thereiam-player.js"></script>
+  <script src="thereiam-submit.js"></script>
+
+  <script>
+    /* ── STARFIELD ── */
+    (function () {
+      const canvas = document.getElementById('starfield');
+      const ctx = canvas.getContext('2d');
+      let stars = [];
+
+      function resize() {
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+        drawStars();
+      }
+
+      function buildStars(n) {
+        stars = [];
+        for (let i = 0; i < n; i++) {
+          stars.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() < 0.92 ? 0.5 : Math.random() * 1.2 + 0.4,
+            a: Math.random() * 0.55 + 0.08,
+            twinkleSpeed: Math.random() * 0.003 + 0.001,
+            twinklePhase: Math.random() * Math.PI * 2,
+          });
+        }
+      }
+
+      function drawStars() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const t = Date.now() * 0.001;
+        stars.forEach(s => {
+          const alpha = s.a * (0.7 + 0.3 * Math.sin(t * s.twinkleSpeed * 1000 + s.twinklePhase));
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(232,228,220,${alpha})`;
+          ctx.fill();
+        });
+      }
+
+      function animate() {
+        drawStars();
+        requestAnimationFrame(animate);
+      }
+
+      window.addEventListener('resize', () => {
+        resize();
+        buildStars(220);
+      });
+
+      resize();
+      buildStars(220);
+      animate();
+    })();
+
+    /* ── SCROLL SECTION TRACKING ── */
+    const sections = [
+      document.getElementById('s0'),
+      document.getElementById('s1'),
+      document.getElementById('s2'),
+      document.getElementById('s3'),
+      document.getElementById('s4'),
+      document.getElementById('s5'),
+    ];
+    const pips = document.querySelectorAll('.progress-pip');
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const idx = sections.indexOf(e.target);
+          pips.forEach((p, i) => p.classList.toggle('active', i === idx));
+        }
+      });
+    }, { threshold: 0.5 });
+
+    sections.forEach(s => { if (s) sectionObserver.observe(s); });
+
+    pips.forEach((pip, i) => {
+      pip.addEventListener('click', () => {
+        if (sections[i]) sections[i].scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    /* ── PANEL ENTRY ANIMATIONS ── */
+    const panelObserver = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        e.target.classList.toggle('in-view', e.isIntersecting);
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('[data-panel]').forEach(p => panelObserver.observe(p));
+
+    /* ── IMAGE CYCLING ── */
+    function getPanel(el) {
+      return el.closest('.piece-panel');
+    }
+
+    function getShots(panel) {
+      return panel.querySelectorAll('.piece-shot');
+    }
+
+    function getDots(panel) {
+      return panel.querySelectorAll('.ctrl-dot');
+    }
+
+    function getCounter(panel) {
+      return panel.querySelector('.slide-counter');
+    }
+
+    function activeIdx(shots) {
+      return [...shots].findIndex(s => s.classList.contains('active'));
+    }
+
+    function gotoIdx(panel, idx) {
+      const shots = getShots(panel);
+      const dots  = getDots(panel);
+      const ctr   = getCounter(panel);
+      shots.forEach((s, i) => s.classList.toggle('active', i === idx));
+      dots.forEach((d, i)  => d.classList.toggle('active', i === idx));
+      if (ctr) ctr.textContent = `${idx + 1} / ${shots.length}`;
+    }
+
+    function nextShot(btn) {
+      const panel = getPanel(btn);
+      const shots = getShots(panel);
+      gotoIdx(panel, (activeIdx(shots) + 1) % shots.length);
+    }
+
+    function prevShot(btn) {
+      const panel = getPanel(btn);
+      const shots = getShots(panel);
+      gotoIdx(panel, (activeIdx(shots) - 1 + shots.length) % shots.length);
+    }
+
+    function goToShot(dot, idx) {
+      gotoIdx(getPanel(dot), idx);
+    }
+
+    function nextShotFromGallery(gallery) {
+      const panel = gallery.closest('.piece-panel');
+      const shots = getShots(panel);
+      gotoIdx(panel, (activeIdx(shots) + 1) % shots.length);
+    }
+
+    /* ── KEYBOARD NAV ── */
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') {
+        const visible = [...document.querySelectorAll('[data-panel].in-view')][0];
+        if (visible) {
+          const shots = getShots(visible);
+          gotoIdx(visible, (activeIdx(shots) + 1) % shots.length);
+        }
+      }
+      if (e.key === 'ArrowLeft') {
+        const visible = [...document.querySelectorAll('[data-panel].in-view')][0];
+        if (visible) {
+          const shots = getShots(visible);
+          gotoIdx(visible, (activeIdx(shots) - 1 + shots.length) % shots.length);
+        }
+      }
+    });
+  </script>
+
+  <!-- ── CONTENT SYNC — pulls live data from thereiam-content.js ── -->
+  <script>
+    (function syncContent() {
+      const hoodies = (window.THEREIAM_CONTENT && THEREIAM_CONTENT.hoodies) || [];
+      if (!hoodies.length) return;
+
+      // Map section IDs to hoodie indices
+      const panelMap = [
+        { sectionId: 's1', idx: 0 },
+        { sectionId: 's2', idx: 1 },
+        { sectionId: 's3', idx: 2 },
+        { sectionId: 's4', idx: 3 },
+      ];
+
+      panelMap.forEach(({ sectionId, idx }) => {
+        const h     = hoodies[idx];
+        const panel = document.getElementById(sectionId);
+        if (!h || !panel) return;
+
+        // ── piece name (split on first space for the <br/> effect)
+        const nameEl = panel.querySelector('.piece-name');
+        if (nameEl) {
+          const words = h.name.split(' ');
+          nameEl.innerHTML = words.length > 1
+            ? words[0] + '<br/>' + words.slice(1).join(' ')
+            : h.name;
+        }
+
+        // ── piece number
+        const numEl = panel.querySelector('.piece-number');
+        if (numEl) numEl.textContent = h.id + ' \u00a0/\u00a0 Pilot Collection Vol. 1';
+
+        // ── meta rows (colorway, graphic, fit)
+        const metaRows = panel.querySelectorAll('.meta-row');
+        const metaVals = [h.colorway, h.graphic, h.fit];
+        metaRows.forEach((row, i) => {
+          if (metaVals[i] !== undefined) {
+            // preserve the dot span
+            const dot = row.querySelector('.meta-dot');
+            row.innerHTML = '';
+            if (dot) row.appendChild(dot);
+            row.appendChild(document.createTextNode(metaVals[i]));
+          }
+        });
+
+        // ── images
+        const shots = panel.querySelectorAll('.piece-shot');
+        h.images.forEach((src, i) => {
+          if (shots[i]) {
+            const img = shots[i].querySelector('img');
+            if (img) {
+              img.src = src;
+              img.alt = h.name + ' — ' + (i + 1);
+            }
+          }
+        });
+
+        // ── watermark
+        const wm = panel.querySelector('.image-watermark');
+        if (wm) wm.textContent = h.name + ' · ' + h.id;
+      });
+    })();
+  </script>
+</body>
+</html>
