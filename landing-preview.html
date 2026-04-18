@@ -893,65 +893,60 @@
   </style>
 
   <style>
-    #shop-backdrop {
-      position: fixed; inset: 0;
-      background: rgba(14,12,8,0.52);
-      z-index: 9000;
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; visibility: hidden;
-      transition: opacity 0.6s ease, visibility 0s linear 0.6s;
-    }
-    #shop-backdrop.open {
-      opacity: 1; pointer-events: all; visibility: visible;
-      transition: opacity 0.6s ease, visibility 0s linear 0s;
-    }
-    #shop-modal {
+    /* ── Corner toast popup ── */
+    #tr-toast {
+      position: fixed;
+      bottom: 24px; right: 24px;
+      width: 264px;
       background: #f5f2eb;
-      border: 1px solid rgba(26,22,18,0.12);
-      padding: 52px 48px 44px;
-      max-width: 400px; width: 90%;
-      text-align: center;
-      position: relative;
-      transform: translateY(12px);
-      transition: transform 0.6s ease;
+      border: 1px solid rgba(26,22,18,0.14);
+      padding: 22px 20px 20px;
+      z-index: 9000;
+      box-shadow: 0 6px 28px rgba(14,12,8,0.16);
+      transform: translateY(18px);
+      opacity: 0; visibility: hidden;
+      transition: transform 0.45s ease, opacity 0.45s ease, visibility 0s linear 0.45s;
     }
-    #shop-backdrop.open #shop-modal { transform: translateY(0); }
-    .shop-eyebrow {
+    #tr-toast.open {
+      transform: translateY(0);
+      opacity: 1; visibility: visible;
+      transition: transform 0.45s ease, opacity 0.45s ease, visibility 0s linear 0s;
+    }
+    .toast-eyebrow {
       font-family: 'Space Mono', monospace;
-      font-size: 8px; letter-spacing: 0.45em; text-transform: uppercase;
-      color: rgba(26,22,18,0.35); margin-bottom: 20px;
+      font-size: 7px; letter-spacing: 0.42em; text-transform: uppercase;
+      color: rgba(26,22,18,0.35); margin-bottom: 10px;
     }
-    .shop-heading {
+    .toast-heading {
       font-family: 'Northpoint', monospace;
-      font-size: clamp(28px, 6vw, 42px);
-      letter-spacing: 0.08em; color: rgba(26,22,18,0.88);
-      margin-bottom: 10px; line-height: 1;
+      font-size: 24px; letter-spacing: 0.1em;
+      color: rgba(26,22,18,0.88); margin-bottom: 8px; line-height: 1;
     }
-    .shop-rule { width: 32px; border: none; border-top: 1px solid rgba(26,22,18,0.15); margin: 0 auto 28px; }
-    .shop-tagline {
+    .toast-rule { width: 24px; border: none; border-top: 1px solid rgba(26,22,18,0.15); margin: 0 0 12px; }
+    .toast-tagline {
       font-family: 'DM Sans', sans-serif; font-weight: 300;
-      font-size: 13px; color: rgba(26,22,18,0.5);
-      letter-spacing: 0.04em; margin-bottom: 36px;
+      font-size: 11px; color: rgba(26,22,18,0.5);
+      letter-spacing: 0.03em; margin-bottom: 16px;
     }
-    .shop-doors { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-    .shop-btn {
-      font-family: 'Space Mono', monospace; font-size: 9px;
-      letter-spacing: 0.25em; text-transform: uppercase;
+    .toast-doors { display: flex; gap: 8px; flex-wrap: wrap; }
+    .toast-btn {
+      font-family: 'Space Mono', monospace; font-size: 8px;
+      letter-spacing: 0.2em; text-transform: uppercase;
       color: rgba(26,22,18,0.82); border: 1px solid rgba(26,22,18,0.25);
-      background: transparent; padding: 12px 22px;
+      background: transparent; padding: 9px 14px;
       cursor: pointer; text-decoration: none; display: inline-block;
       transition: background 0.2s, color 0.2s;
     }
-    .shop-btn:hover { background: rgba(26,22,18,0.88); color: #f5f2eb; }
-    .shop-btn.primary { background: rgba(26,22,18,0.88); color: #f5f2eb; }
-    .shop-btn.primary:hover { background: rgba(26,22,18,0.7); }
-    .shop-dismiss {
-      position: absolute; top: 16px; right: 20px;
+    .toast-btn:hover { background: rgba(26,22,18,0.88); color: #f5f2eb; }
+    .toast-btn.primary { background: rgba(26,22,18,0.88); color: #f5f2eb; }
+    .toast-btn.primary:hover { background: rgba(26,22,18,0.7); }
+    .toast-dismiss {
+      position: absolute; top: 10px; right: 12px;
       background: none; border: none;
-      font-family: 'Space Mono', monospace; font-size: 10px;
-      color: rgba(26,22,18,0.25); cursor: pointer; letter-spacing: 0.1em;
+      font-family: 'Space Mono', monospace; font-size: 9px;
+      color: rgba(26,22,18,0.28); cursor: pointer;
     }
-    .shop-dismiss:hover { color: rgba(26,22,18,0.55); }
+    .toast-dismiss:hover { color: rgba(26,22,18,0.6); }
   </style>
 </head>
 <body>
@@ -1380,162 +1375,97 @@
       }
     }
 
-    // ── Smile mechanic state
-    const counts    = {};
-    let totalSmiles = 0;
-    let revealed    = false;
-    let whisperShown = false;
-    // ── Stages (3 smiles total)
-    //   1 : btn → lit + counter appears
-    //   2 : btn → glow + page dimming + whisper "keep going."
-    //   3 : btn → burning → FLICKER → REVEAL
+    // ── Smile mechanic — localStorage persistent ──
+    const SMILE_KEY = 'tr_smiles_v1';
+    const TOTAL_KEY = 'tr_total_v1';
+    const TOAST_KEY = 'tr_toast_shown';
+
+    function loadSmiles() {
+      try { return JSON.parse(localStorage.getItem(SMILE_KEY) || '{}'); } catch(e) { return {}; }
+    }
+    function saveSmiles(c) { try { localStorage.setItem(SMILE_KEY, JSON.stringify(c)); } catch(e) {} }
+    function loadTotal()   { return parseInt(localStorage.getItem(TOTAL_KEY) || '0', 10); }
+    function saveTotal(n)  { try { localStorage.setItem(TOTAL_KEY, String(n)); } catch(e) {} }
+
+    const counts = loadSmiles();
+    let totalSmiles = loadTotal();
+
+    // Restore state on load
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.smile-btn').forEach(btn => {
+        const piece = btn.dataset.piece;
+        if (counts[piece]) {
+          btn.classList.add(totalSmiles >= 3 ? 'glow' : 'lit');
+          const countEl = document.getElementById('count-' + piece);
+          if (countEl) {
+            const n = counts[piece];
+            countEl.textContent = piece.startsWith('p') ? n + (n===1?' smile':' smiles') : n;
+            countEl.classList.add('active');
+          }
+        }
+      });
+      if (totalSmiles > 0) {
+        const counter = document.getElementById('totalCounter');
+        if (counter) {
+          counter.textContent = totalSmiles + (totalSmiles===1?' smile':' smiles') + ' across the archive';
+          counter.classList.add('show');
+        }
+      }
+    });
 
     function smileIt(btn) {
-      if (revealed) return;
-
       const piece = btn.dataset.piece;
       counts[piece] = (counts[piece] || 0) + 1;
       totalSmiles++;
+      saveSmiles(counts);
+      saveTotal(totalSmiles);
 
-      // Update individual count
+      // Update per-piece count
       const countEl = document.getElementById('count-' + piece);
-      const n = counts[piece];
-      countEl.textContent = piece.startsWith('p')
-        ? n + (n === 1 ? ' smile' : ' smiles')
-        : n;
-      countEl.classList.add('active');
+      if (countEl) {
+        const n = counts[piece];
+        countEl.textContent = piece.startsWith('p') ? n + (n===1?' smile':' smiles') : n;
+        countEl.classList.add('active');
+      }
 
-      // Bounce animation
+      // Bounce
+      btn.classList.add('lit');
       btn.style.transform = 'scale(1.35) rotate(-8deg)';
       setTimeout(() => (btn.style.transform = ''), 200);
 
-      // ── Stage 1: lit + counter appears
-      if (totalSmiles >= 1) btn.classList.add('lit');
-
+      // Update total counter
       const counter = document.getElementById('totalCounter');
-      if (totalSmiles === 1) {
-        counter.textContent = totalSmiles + ' smile across the archive';
+      if (counter) {
+        counter.textContent = totalSmiles + (totalSmiles===1?' smile':' smiles') + ' across the archive';
         counter.classList.add('show');
-      } else if (totalSmiles > 1 && totalSmiles < 3) {
-        counter.textContent = totalSmiles + ' smiles across the archive';
       }
 
-      // ── Stage 2: glow + page dims + whisper
-      if (totalSmiles === 2) {
-        document.querySelectorAll('.smile-btn').forEach(b => {
-          b.classList.remove('lit');
-          b.classList.add('glow');
-        });
-        document.body.classList.add('dimming');
-        if (!whisperShown) {
-          whisperShown = true;
-          showWhisper('keep going.');
-        }
+      // Glow all buttons after 3 total
+      if (totalSmiles >= 3) {
+        document.querySelectorAll('.smile-btn').forEach(b => { b.classList.remove('lit'); b.classList.add('glow'); });
       }
 
-      // ── Stage 3: burning → REVEAL
-      if (totalSmiles === 3) {
-        document.querySelectorAll('.smile-btn').forEach(b => {
-          b.classList.remove('glow');
-          b.classList.add('burning');
-        });
-      }
-
-      // ── Stage 3 continued: REVEAL
-      if (totalSmiles >= 3 && !revealed) {
-        revealed = true;
-        triggerReveal();
+      // Show corner popup on first like this session
+      if (!sessionStorage.getItem(TOAST_KEY)) {
+        sessionStorage.setItem(TOAST_KEY, '1');
+        setTimeout(openToast, 700);
       }
     }
 
-    function showWhisper(text) {
-      const w = document.getElementById('whisper');
-      w.textContent = text;
-      w.classList.add('show');
-      setTimeout(() => w.classList.remove('show'), 3500);
-    }
-
-    function triggerReveal() {
-      // 1. Flicker the page before going dark
-      document.body.classList.add('flicker');
-
-      // 2. After flicker, show the reveal overlay + lock scroll
-      setTimeout(() => {
-        document.body.classList.remove('flicker');
-        document.body.style.overflow = 'hidden';
-        document.getElementById('reveal').classList.add('active');
-      }, 420);
-    }
-
-    // ── Enter — navigate into the chosen page
-    function enterSite(dest) {
-      const overlay = document.getElementById('reveal');
-      overlay.style.transition = 'opacity 1.4s ease';
-      overlay.style.opacity = '0';
-      setTimeout(() => {
-        window.location.href = dest;
-      }, 1400);
-    }
-
-    // ── Dismiss — go back to archive without losing the moment
-    function dismissReveal() {
-      const overlay = document.getElementById('reveal');
-      overlay.style.transition = 'opacity 0.8s ease';
-      overlay.style.opacity = '0';
-      setTimeout(() => {
-        overlay.style.cssText = '';
-        overlay.classList.remove('active');
-        document.body.style.overflow = '';
-        // Don't reset — the door stays found
-      }, 800);
-    }
-
-    // ── Escape key to dismiss
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && revealed) dismissReveal();
-    });
-
-    // ── Watermark Easter egg: 5 rapid clicks = skip to reveal
-    let watermarkClicks = 0;
-    let watermarkTimer  = null;
-    document.querySelector('.watermark').addEventListener('click', () => {
-      if (revealed) return;
-      watermarkClicks++;
-      clearTimeout(watermarkTimer);
-      watermarkTimer = setTimeout(() => (watermarkClicks = 0), 1800);
-
-      if (watermarkClicks >= 5) {
-        watermarkClicks = 0;
-        if (!revealed) {
-          revealed = true;
-          // Give a little whisper hint first
-          showWhisper('there you are.');
-          setTimeout(triggerReveal, 1200);
-        }
-      }
-    });
+    function openToast()  { document.getElementById('tr-toast').classList.add('open'); }
+    function closeToast() { document.getElementById('tr-toast').classList.remove('open'); }
   </script>
 
-  <div id="shop-backdrop">
-    <div id="shop-modal">
-      <button class="shop-dismiss" onclick="closeShop()">✕</button>
-      <div class="shop-eyebrow">Pilot Collection Vol. 1</div>
-      <div class="shop-heading">THEREIAM</div>
-      <hr class="shop-rule" />
-      <div class="shop-tagline">Everyone IS Everything.</div>
-      <div class="shop-doors">
-        <a class="shop-btn primary" href="page-hoodies.html">The Collection →</a>
-        <a class="shop-btn" href="page-brand.html">The Brand →</a>
-      </div>
+  <div id="tr-toast">
+    <button class="toast-dismiss" onclick="closeToast()">✕</button>
+    <div class="toast-eyebrow">Pilot Collection Vol. 1</div>
+    <div class="toast-heading">THEREIAM</div>
+    <hr class="toast-rule" />
+    <div class="toast-tagline">Everyone IS Everything.</div>
+    <div class="toast-doors">
+      <a class="toast-btn primary" href="page-hoodies.html">The Collection →</a>
+      <a class="toast-btn" href="page-brand.html">The Brand →</a>
     </div>
   </div>
-  <script>
-    function openShop()  { document.getElementById('shop-backdrop').classList.add('open'); }
-    function closeShop() { document.getElementById('shop-backdrop').classList.remove('open'); }
-    setTimeout(openShop, 1800);
-    document.getElementById('shop-backdrop').addEventListener('click', function(e) {
-      if (e.target === this) closeShop();
-    });
-  </script>
 </body>
 </html>
