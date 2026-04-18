@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>In Plain Sight</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500&family=Space+Mono&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="thereiam-player.css" />
+  <link rel="stylesheet" href="thereiam-ui.css" />
+  <style>
+    @font-face {
+      font-family: 'Northpoint';
+      src: url('North point.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+  </style>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #f5f2eb;
+      --surface:   #edeae1;
+      --ink:       #1a1612;
+      --ink-mid:   #5c554c;
+      --ink-dim:   #a09890;
+      --rule:      rgba(26,22,18,0.1);
+      --ember:     #b8841f;
+      --ember-bg:  rgba(184,132,31,0.08);
+      --void:      #0e0b08;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── subtle paper texture — tiled shift, no edge flicker ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.78' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      background-repeat: repeat;
+      opacity: 0.028;
+      pointer-events: none;
+      z-index: 9000;
+      animation: grain 1.4s steps(3) infinite;
+    }
+
+    @keyframes grain {
+      0%   { background-position: 0 0; }
+      33%  { background-position: 50px 25px; }
+      66%  { background-position: -35px 55px; }
+      100% { background-position: 25px -35px; }
+    }
+
+    /* ════════════════════════════
+       PUBLICATION HEADER
+    ════════════════════════════ */
+    .pub-header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+    }
+
+    /* thin top bar */
+    .pub-topbar {
+      border-bottom: 1px solid var(--rule);
+      padding: 7px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .pub-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+
+    .pub-top-nav {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .pub-top-nav a {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .pub-top-nav a:hover { color: var(--ink); }
+
+    .pub-top-nav a.submit {
+      color: var(--ember);
+      border: 1px solid rgba(184,132,31,0.3);
+      padding: 3px 10px;
+    }
+
+    .pub-top-nav a.submit:hover {
+      background: var(--ember-bg);
+    }
+
+    .nav-gear {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--ink-dim);
+      opacity: 0.4;
+      padding: 2px 4px;
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+    .nav-gear:hover { opacity: 1; }
+
+    /* nameplate */
+    .pub-nameplate {
+      padding: 16px 48px 14px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .pub-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(28px, 4vw, 48px);
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      line-height: 1;
+    }
+
+    .pub-subtitle {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--ink-mid);
+      white-space: nowrap;
+    }
+
+    /* category tabs */
+    .pub-tabs {
+      border-top: 1px solid var(--rule);
+      padding: 0 48px;
+      display: flex;
+      gap: 0;
+    }
+
+    .pub-tab {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      padding: 10px 20px 10px 0;
+      margin-right: 20px;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: none;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+    }
+
+    .pub-tab:hover { color: var(--ink); }
+    .pub-tab.active {
+      color: var(--ink);
+      border-bottom-color: var(--ink);
+    }
+
+    /* ════════════════════════════
+       SIGHTINGS SECTION
+    ════════════════════════════ */
+    .sightings-section {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 52px 48px 40px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--ink);
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .section-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+    }
+
+    .sightings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    /* ── sighting card ── */
+    .sighting-card {
+      opacity: 0;
+      animation: riseIn 0.8s ease forwards;
+    }
+
+    .sighting-card:nth-child(1) { animation-delay: 0.1s; }
+    .sighting-card:nth-child(2) { animation-delay: 0.25s; }
+    .sighting-card:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .sighting-photo {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+    }
+
+    .sighting-photo.wall-1 {
+      background:
+        radial-gradient(ellipse at 15% 85%, rgba(80,64,44,0.55) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 15%, rgba(60,50,34,0.45) 0%, transparent 50%),
+        linear-gradient(160deg, #2a2520 0%, #342e26 40%, #262018 70%, #2e2820 100%);
+    }
+
+    .sighting-photo.wall-2 {
+      background:
+        radial-gradient(ellipse at 70% 30%, rgba(46,40,30,0.7) 0%, transparent 50%),
+        radial-gradient(ellipse at 20% 75%, rgba(70,58,42,0.45) 0%, transparent 55%),
+        linear-gradient(200deg, #201c16 0%, #2a2419 50%, #322b1e 100%);
+    }
+
+    .sighting-photo.wall-3 {
+      background:
+        radial-gradient(ellipse at 50% 50%, rgba(40,34,24,0.65) 0%, transparent 60%),
+        radial-gradient(ellipse at 10% 90%, rgba(72,60,40,0.38) 0%, transparent 50%),
+        linear-gradient(120deg, #252018 0%, #2c261c 60%, #221e14 100%);
+    }
+
+    .sighting-photo::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 300' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='t'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23t)' opacity='0.5'/%3E%3C/svg%3E");
+      opacity: 0.1; mix-blend-mode: overlay; z-index: 1;
+    }
+
+    .sighting-photo::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.5) 100%);
+      z-index: 2;
+    }
+
+    .graffiti-tag {
+      position: absolute; z-index: 3;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      inset: 0; padding: 20px;
+    }
+
+    .graffiti-tag.stacked { gap: 8px; }
+
+    .graffiti-tag img.wordmark {
+      width: 75%; max-width: 220px;
+      filter: invert(1) brightness(0.95) contrast(1.1);
+      mix-blend-mode: screen; opacity: 0.88;
+    }
+
+    .graffiti-tag img.smiley-tag {
+      width: 40%; max-width: 100px;
+      filter: invert(1) brightness(0.9);
+      mix-blend-mode: screen; opacity: 0.82;
+    }
+
+    .graffiti-tag img.smiley-large {
+      width: 52%; max-width: 140px;
+      filter: invert(1) brightness(0.88);
+      mix-blend-mode: screen; opacity: 0.78;
+    }
+
+    /* card footer */
+    .card-footer {
+      padding: 10px 0 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .card-location {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+    }
+
+    .card-date {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      color: var(--ink-dim);
+    }
+
+    /* ── SMILE BUTTON ── */
+    .smile-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .smile-btn {
+      width: 32px; height: 32px;
+      background: none; border: none;
+      cursor: pointer; padding: 0;
+      flex-shrink: 0;
+      transition: transform 0.18s ease;
+    }
+
+    .smile-btn:hover { transform: scale(1.15) rotate(-6deg); }
+    .smile-btn:active { transform: scale(0.9); }
+
+    .smile-btn img {
+      width: 100%; height: 100%; object-fit: contain;
+      filter: opacity(0.2);
+      transition: filter 0.35s ease;
+    }
+
+    .smile-btn.lit img {
+      filter: opacity(0.75) sepia(1) saturate(3) hue-rotate(-15deg);
+    }
+
+    .smile-btn.glow img {
+      filter: opacity(1) sepia(1) saturate(4) hue-rotate(-12deg)
+              drop-shadow(0 0 5px rgba(184,132,31,0.7));
+    }
+
+    .smile-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      color: var(--ink-dim);
+      transition: color 0.3s;
+      min-width: 20px;
+    }
+
+    .smile-count.active { color: var(--ember); }
+
+    /* ════════════════════════════
+       SUBMIT CALLOUT
+    ════════════════════════════ */
+    .submit-callout {
+      max-width: 1240px;
+      margin: 0 auto 52px;
+      padding: 0 48px;
+    }
+
+    .submit-inner {
+      background: var(--surface);
+      border: 1px solid var(--rule);
+      padding: 24px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .submit-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--ink-mid);
+      line-height: 1.7;
+    }
+
+    .submit-text strong { color: var(--ink); font-weight: 500; }
+
+    .submit-cta {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--ember);
+      background: none;
+      border: 1px solid rgba(184,132,31,0.3);
+      padding: 10px 24px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.25s;
+    }
+
+    .submit-cta:hover { background: var(--ember-bg); border-color: var(--ember); }
+
+    /* ════════════════════════════
+       ARCHIVE — TEXT WORKS
+    ════════════════════════════ */
+    .archive-section {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 48px 100px;
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 60px;
+      align-items: start;
+    }
+
+    .archive-main-col {}
+
+    .archive-sidebar {}
+
+    /* pieces */
+    .piece {
+      padding-bottom: 44px;
+      margin-bottom: 44px;
+      border-bottom: 1px solid var(--rule);
+      opacity: 0;
+      animation: riseIn 0.9s ease forwards;
+    }
+
+    .piece:nth-child(1) { animation-delay: 0.5s; }
+    .piece:nth-child(2) { animation-delay: 0.7s; }
+    .piece:nth-child(3) { animation-delay: 0.9s; }
+    .piece:last-child { border-bottom: none; }
+
+    .piece-category {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ember);
+      margin-bottom: 10px;
+    }
+
+    .piece-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(20px, 2.5vw, 28px);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .piece-byline {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      color: var(--ink-dim);
+      margin-bottom: 18px;
+    }
+
+    .piece-excerpt {
+      font-size: 15px;
+      line-height: 1.9;
+      color: var(--ink-mid);
+      font-style: italic;
+      margin-bottom: 20px;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    .piece-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .piece-read {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      border-bottom: 1px solid var(--rule);
+      padding-bottom: 1px;
+      transition: border-color 0.2s;
+    }
+
+    .piece-read:hover { border-color: var(--ink); }
+
+    /* ── sidebar ── */
+    .sidebar-block {
+      border-top: 2px solid var(--ink);
+      padding-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .sidebar-heading {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 18px;
+    }
+
+    .sidebar-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--rule);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .sidebar-item:last-child { border-bottom: none; }
+
+    .sidebar-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+      line-height: 1.7;
+    }
+
+    .sidebar-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--ink-dim);
+      flex-shrink: 0;
+    }
+
+    .sidebar-about {
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--ink-mid);
+      font-style: italic;
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+
+    /* ════════════════════════════
+       FOOTER
+    ════════════════════════════ */
+    .pub-footer {
+      border-top: 2px solid var(--ink);
+      padding: 28px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--surface);
+    }
+
+    .footer-name {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .footer-motto {
+      font-family: 'Northpoint', 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      color: var(--ink-mid);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-smiley {
+      width: 28px;
+      opacity: 0.15;
+      transition: opacity 0.3s;
+      cursor: default;
+    }
+
+    .footer-smiley:hover { opacity: 0.5; }
+
+    /* ════════════════════════════
+       FIXED ELEMENTS
+    ════════════════════════════ */
+    .watermark {
+      position: fixed;
+      bottom: 24px; right: 28px;
+      opacity: 0.06;
+      transition: opacity 0.4s;
+      z-index: 50;
+    }
+
+    .watermark:hover { opacity: 0.18; }
+    .watermark img { width: 38px; }
+
+    #whisper {
+      position: fixed;
+      bottom: 72px; left: 50%;
+      transform: translateX(-50%);
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--ember);
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.6s;
+      white-space: nowrap; z-index: 500;
+    }
+
+    #whisper.show { opacity: 1; }
+
+    .total-counter {
+      position: fixed;
+      top: 12px; right: 48px;
+      font-family: 'Space Mono', monospace;
+      font-size: 8px; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-dim);
+      opacity: 0; transition: opacity 0.5s;
+      z-index: 300;
+    }
+
+    .total-counter.show { opacity: 1; }
+
+    /* ════════════════════════════
+       BODY STATES — pre-reveal dimming
+    ════════════════════════════ */
+    body.dimming {
+      background: #ede8df;
+      transition: background 2s ease;
+    }
+
+    body.flicker {
+      animation: pageFlicker 0.4s steps(1) forwards;
+    }
+
+    @keyframes pageFlicker {
+      0%   { filter: brightness(1); }
+      20%  { filter: brightness(0.6); }
+      35%  { filter: brightness(1.1); }
+      55%  { filter: brightness(0.3); }
+      70%  { filter: brightness(0.9); }
+      85%  { filter: brightness(0.1); }
+      100% { filter: brightness(0); }
+    }
+
+    /* ════════════════════════════
+       REVEAL OVERLAY — the door
+    ════════════════════════════ */
+    #reveal {
+      position: fixed; inset: 0;
+      background: #0a0806;
+      z-index: 8000;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 0;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s ease;
+    }
+
+    #reveal.active { opacity: 1; pointer-events: all; }
+
+    /* "there." — first word to appear in the void */
+    .reveal-word {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(14px, 2vw, 20px);
+      font-style: italic;
+      letter-spacing: 0.25em;
+      color: rgba(240,236,224,0.45);
+      opacity: 0;
+      margin-bottom: 48px;
+      transition: opacity 1s ease 0.6s;
+    }
+
+    #reveal.active .reveal-word { opacity: 1; }
+
+    /* Main wordmark */
+    .reveal-logo {
+      width: clamp(220px, 48vw, 520px);
+      filter: invert(1);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 1.6s ease 1.8s, transform 1.6s ease 1.8s;
+    }
+
+    #reveal.active .reveal-logo {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Mr. Smile */
+    .reveal-smiley {
+      width: 48px;
+      filter: invert(1);
+      opacity: 0;
+      margin-top: 24px;
+      transition: opacity 1s ease 3.2s;
+    }
+
+    #reveal.active .reveal-smiley { opacity: 0.4; }
+
+    /* Motto line */
+    .reveal-motto {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: rgba(196,150,42,0.7);
+      margin-top: 32px;
+      opacity: 0;
+      transition: opacity 1s ease 4s;
+    }
+
+    #reveal.active .reveal-motto { opacity: 1; }
+
+    /* Entry buttons — two doors */
+    .reveal-doors {
+      display: flex;
+      gap: 20px;
+      margin-top: 52px;
+      opacity: 0;
+      transition: opacity 1s ease 4.8s;
+    }
+
+    #reveal.active .reveal-doors { opacity: 1; }
+
+    .reveal-enter {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.45em;
+      text-transform: uppercase;
+      color: #ede9df;
+      background: none;
+      border: 1px solid rgba(237,233,223,0.15);
+      padding: 16px 36px;
+      cursor: pointer;
+      transition: border-color 0.3s, color 0.3s;
+    }
+
+    .reveal-enter:hover {
+      border-color: rgba(196,150,42,0.7);
+      color: #c4962a;
+    }
+
+    /* Dismiss hint */
+    .reveal-dismiss {
+      position: absolute;
+      bottom: 32px;
+      font-family: 'Space Mono', monospace;
+      font-size: 7px;
+      letter-spacing: 0.4em;
+      text-transform: uppercase;
+      color: rgba(240,236,224,0.1);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 1s ease 5.5s, color 0.3s;
+      background: none;
+      border: none;
+    }
+
+    #reveal.active .reveal-dismiss { opacity: 1; }
+    .reveal-dismiss:hover { color: rgba(240,236,224,0.35); }
+
+    /* smile-btn burning stage (4th smile) — grows and pulses */
+    .smile-btn.burning {
+      width: 56px;
+      height: 56px;
+      animation: smilePulse 0.9s ease-in-out infinite;
+    }
+
+    .smile-btn.burning img {
+      filter: opacity(1) sepia(1) saturate(5) hue-rotate(-12deg)
+              drop-shadow(0 0 10px rgba(184,132,31,0.9));
+    }
+
+    @keyframes smilePulse {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      40%       { transform: scale(1.18) rotate(-6deg); }
+      70%       { transform: scale(0.95) rotate(4deg); }
+    }
+
+    /* ════════════════════════════
+       SOUND SECTION
+    ════════════════════════════ */
+    .sound-section {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 48px 100px;
+    }
+
+    .sound-inner {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 60px;
+      align-items: start;
+    }
+
+    .sound-tracklist { width: 100%; }
+
+    .sound-track {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--rule);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .sound-track:hover { background: rgba(26,22,18,0.03); }
+    .sound-track:hover .st-play { color: var(--ember); }
+
+    .sound-track.playing .st-play { color: var(--ember); }
+    .sound-track.playing .st-title { color: var(--ink); }
+    .sound-track.playing .st-num { color: var(--ember); }
+
+    .st-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.22em;
+      color: var(--ink-dim);
+      width: 22px;
+      flex-shrink: 0;
+    }
+
+    .st-play {
+      font-size: 10px;
+      color: var(--ink-dim);
+      width: 14px;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .st-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--ink);
+      flex: 1;
+    }
+
+    .st-artist {
+      font-family: 'Space Mono', monospace;
+      font-size: 8px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink-mid);
+    }
+
+    .st-dur {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--ink-dim);
+      flex-shrink: 0;
+    }
+
+    /* ── responsive ── */
+    @media (max-width: 900px) {
+      .sound-inner { grid-template-columns: 1fr; }
+    }
+      .pub-topbar, .pub-nameplate, .pub-tabs,
+      .sightings-section, .submit-callout, .archive-section, .pub-footer
+      { padding-left: 24px; padding-right: 24px; }
+
+      .sightings-grid { grid-template-columns: 1fr; }
+      .archive-section { grid-template-columns: 1fr; }
+      .archive-sidebar { display: none; }
+      .pub-top-nav { gap: 16px; }
+      .sound-inner { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════════
+       PUBLICATION HEADER
+  ════════════════════════════ -->
+  <header class="pub-header">
+
+    <div class="pub-topbar">
+      <span class="pub-date">Vol. 1 &nbsp;·&nbsp; April 2026</span>
+      <nav class="pub-top-nav">
+        <a href="page-archive.html">Archive</a>
+        <a href="#" class="submit" onclick="trOpenSubmit();return false;">Submit Your Work</a>
+        <button class="nav-gear" onclick="openAdminModal()" title="Admin">⚙</button>
+      </nav>
+    </div>
+
+    <div class="pub-nameplate">
+      <h1 class="pub-title">In Plain Sight</h1>
+      <span class="pub-subtitle">A community creative archive</span>
+    </div>
+
+    <div class="pub-tabs">
+      <button class="pub-tab active" data-tab="all">All</button>
+      <button class="pub-tab" data-tab="poetry">Poetry</button>
+      <button class="pub-tab" data-tab="spoken-word">Spoken Word</button>
+      <button class="pub-tab" data-tab="photography">Photography</button>
+      <button class="pub-tab" data-tab="sound">Sounds</button>
+    </div>
+
+  </header>
+
+
+  <!-- ════════════════════════════
+       SOUND SECTION (hidden until Sound tab clicked)
+  ════════════════════════════ -->
+  <div id="sound-section" class="sound-section" style="display:none; padding-top:52px;">
+    <div class="sound-inner">
+      <main class="sound-main">
+        <div class="section-header" style="margin-bottom:36px;">
+          <span class="section-title">Music Archive</span>
+          <span class="section-count" id="tr-sound-count">— tracks</span>
+        </div>
+        <div class="sound-tracklist" id="sound-tracklist"></div>
+      </main>
+      <aside class="archive-sidebar">
+        <div class="sidebar-block">
+          <h3 class="sidebar-heading">About the Sound</h3>
+          <p class="sidebar-about">
+            Made in the same spirit the hoodies were —
+            for nobody in particular. For everyone exactly.
+            Play from here. It follows you through the archive.
+          </p>
+        </div>
+        <div class="sidebar-block">
+          <h3 class="sidebar-heading">Listening</h3>
+          <div class="sidebar-item">
+            <span class="sidebar-label" id="sound-now-playing">Nothing playing yet.</span>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- main content wrapper — hidden when Sound tab is active -->
+  <div id="main-content">
+
+  <!-- ════════════════════════════
+       SIGHTINGS
+  ════════════════════════════ -->
+  <section class="sightings-section">
+    <div class="section-header">
+      <span class="section-title">Recent Sightings</span>
+      <span class="section-count">3 documented</span>
+    </div>
+
+    <div class="sightings-grid">
+
+      <div class="sighting-card">
+        <div class="sighting-photo wall-1">
+          <div class="graffiti-tag">
+            <img class="wordmark" src="THEREIAM LOGOS/THEREIAM LOGO1.png" alt="" />
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="card-meta">
+            <span class="card-location">Atlanta, GA</span>
+            <span class="card-date">April 2026</span>
+          </div>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="s1" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-s1">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sighting-card">
+        <div class="sighting-photo wall-2">
+          <div class="graffiti-tag stacked">
+            <img class="smiley-tag" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            <img class="wordmark" src="THEREIAM LOGOS/THEREIAM LOGO1.png" alt="" />
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="card-meta">
+            <span class="card-location">Brooklyn, NY</span>
+            <span class="card-date">March 2026</span>
+          </div>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="s2" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-s2">0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sighting-card">
+        <div class="sighting-photo wall-3">
+          <div class="graffiti-tag">
+            <img class="smiley-large" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+          </div>
+        </div>
+        <div class="card-footer">
+          <div class="card-meta">
+            <span class="card-location">Chicago, IL</span>
+            <span class="card-date">February 2026</span>
+          </div>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="s3" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-s3">0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ════════════════════════════
+       SUBMIT CALLOUT
+  ════════════════════════════ -->
+  <div class="submit-callout">
+    <div class="submit-inner">
+      <div class="submit-text">
+        <strong>Seen it somewhere?</strong> Put it up. Snap it. Send it in.
+        Every sighting gets a permanent place in the archive.
+      </div>
+      <button class="submit-cta" onclick="alert('Submissions open when the app launches. Stay close.')">
+        Submit Yours →
+      </button>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════
+       ARCHIVE + SIDEBAR
+  ════════════════════════════ -->
+  <div class="archive-section">
+
+    <main>
+      <div class="section-header" style="margin-bottom:36px;">
+        <span class="section-title">From the Archive</span>
+        <span class="section-count" id="archive-count">3 works</span>
+      </div>
+
+      <!-- Piece 1 -->
+      <article class="piece" data-type="spoken-word">
+        <div class="piece-category">Spoken Word</div>
+        <h2 class="piece-title">I looked for myself in the faces of strangers</h2>
+        <div class="piece-byline">Anonymous &nbsp;·&nbsp; Submitted March 2026</div>
+        <div class="piece-excerpt">
+          and found I was already there.<br/><br/>
+          In the hands that built what I touch.<br/>
+          In the voice that said what I felt.<br/><br/>
+          I have been everywhere.<br/>
+          I just didn't know to look.
+        </div>
+        <div class="piece-footer">
+          <a href="#" class="piece-read">Read in full</a>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="p1" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-p1">0 smiles</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Piece 2 -->
+      <article class="piece" data-type="poetry">
+        <div class="piece-category">Poetry</div>
+        <h2 class="piece-title">The city keeps moving</h2>
+        <div class="piece-byline">M. Stevens &nbsp;·&nbsp; Submitted January 2026</div>
+        <div class="piece-excerpt">
+          and I keep being still<br/>
+          and somehow<br/><br/>
+          we meet<br/>
+          in the middle of everything<br/>
+          like we planned it.
+        </div>
+        <div class="piece-footer">
+          <a href="#" class="piece-read">Read in full</a>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="p2" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-p2">0 smiles</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Piece 3 -->
+      <article class="piece" data-type="spoken-word">
+        <div class="piece-category">Spoken Word</div>
+        <h2 class="piece-title">Every room I walk into</h2>
+        <div class="piece-byline">D. Okafor &nbsp;·&nbsp; Submitted February 2026</div>
+        <div class="piece-excerpt">
+          I've already left something behind.<br/><br/>
+          A word someone will repeat<br/>
+          without knowing where it came from.<br/><br/>
+          That's not loss.<br/>
+          That's how you stay everywhere.
+        </div>
+        <div class="piece-footer">
+          <a href="#" class="piece-read">Read in full</a>
+          <div class="smile-wrap">
+            <button class="smile-btn" data-piece="p3" onclick="smileIt(this)" aria-label="Smile">
+              <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+            </button>
+            <span class="smile-count" id="count-p3">0 smiles</span>
+          </div>
+        </div>
+      </article>
+
+    </main>
+
+    <!-- sidebar -->
+    <aside class="archive-sidebar">
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">About This Archive</h3>
+        <p class="sidebar-about">
+          In Plain Sight documents creative work found, made, and felt
+          in communities across cities. Photography, poetry, spoken word —
+          submitted by the people who live it.
+        </p>
+      </div>
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">By City</h3>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Atlanta, GA</span>
+          <span class="sidebar-num">1</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Brooklyn, NY</span>
+          <span class="sidebar-num">1</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Chicago, IL</span>
+          <span class="sidebar-num">1</span>
+        </div>
+      </div>
+
+      <div class="sidebar-block">
+        <h3 class="sidebar-heading">By Type</h3>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Sightings</span>
+          <span class="sidebar-num">3</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Spoken Word</span>
+          <span class="sidebar-num">2</span>
+        </div>
+        <div class="sidebar-item">
+          <span class="sidebar-label">Poetry</span>
+          <span class="sidebar-num">1</span>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+
+  </div><!-- /#main-content -->
+
+  <!-- ════════════════════════════
+       FOOTER
+  ════════════════════════════ -->
+  <footer class="pub-footer" style="min-height:48px;"></footer>
+
+  <!-- ADMIN ACCESS MODAL -->
+  <div id="admin-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:8000;align-items:center;justify-content:center;">
+    <div style="background:#09080d;border:1px solid rgba(237,233,223,0.08);padding:52px 44px;max-width:320px;width:90%;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.5em;text-transform:uppercase;color:rgba(237,233,223,0.18);margin-bottom:32px;">Admin Access</div>
+      <input id="admin-pw-input" type="password" placeholder="· · · · · · · ·"
+        style="width:100%;background:rgba(237,233,223,0.04);border:1px solid rgba(237,233,223,0.1);color:#ede9df;font-family:'Space Mono',monospace;font-size:14px;letter-spacing:0.3em;padding:13px 16px;text-align:center;outline:none;margin-bottom:10px;"
+        onkeydown="if(event.key==='Enter') checkAdminPw()" />
+      <div id="admin-pw-err" style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.2em;color:#b54a3a;height:16px;margin-bottom:12px;"></div>
+      <button onclick="checkAdminPw()" style="width:100%;background:#2d6aad;border:none;color:#fff;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.4em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:10px;">Enter →</button>
+      <button onclick="closeAdminModal()" style="background:none;border:none;color:rgba(237,233,223,0.2);font-family:'Space Mono',monospace;font-size:8px;letter-spacing:0.25em;text-transform:uppercase;cursor:pointer;padding:8px;">cancel</button>
+    </div>
+  </div>
+  <script>
+    function openAdminModal()  { const m=document.getElementById('admin-modal'); m.style.display='flex'; setTimeout(()=>document.getElementById('admin-pw-input').focus(),50); }
+    function closeAdminModal() { document.getElementById('admin-modal').style.display='none'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-err').textContent=''; }
+    function checkAdminPw() {
+      const pw = document.getElementById('admin-pw-input').value;
+      const stored = localStorage.getItem('tr_admin_pw') || 'THEREIAM';
+      if (pw === stored) { sessionStorage.setItem('tr_admin_ok','1'); window.location.href='admin.html'; }
+      else { document.getElementById('admin-pw-err').textContent='wrong password'; document.getElementById('admin-pw-input').value=''; document.getElementById('admin-pw-input').focus(); }
+    }
+  </script>
+
+
+  <!-- fixed -->
+  <div class="watermark">
+    <img src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+  </div>
+
+  <div class="total-counter" id="totalCounter"></div>
+  <div id="whisper">you see it?</div>
+
+  <!-- REVEAL — the door -->
+  <div id="reveal">
+    <p class="reveal-word">finally.</p>
+    <img class="reveal-logo" src="THEREIAM LOGOS/THEREIAM LOGO1.png" alt="THEREIAM" />
+    <img class="reveal-smiley" src="THEREIAM LOGOS/THEREIAM LOGO2.png" alt="" />
+    <p class="reveal-motto">Everyone IS Everything.</p>
+    <div class="reveal-doors">
+      <button class="reveal-enter" onclick="enterSite('page-brand.html')">The Brand →</button>
+      <button class="reveal-enter" onclick="enterSite('page-hoodies.html')">The Collection →</button>
+    </div>
+    <button class="reveal-dismiss" onclick="dismissReveal()">← back to the archive</button>
+  </div>
+
+
+  <!-- PLAYER -->
+  <div id="tr-player"></div>
+  
+  <script src="thereiam-content.js"></script>
+  <script src="thereiam-media-db.js"></script>
+  <script src="thereiam-player.js"></script>
+  <script src="thereiam-submit.js"></script>
+
+  <script>
+    // ── Tab switching
+    document.querySelectorAll('.pub-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.pub-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        applyTab(tab.dataset.tab);
+      });
+    });
+
+    function applyTab(type) {
+      const mainContent  = document.getElementById('main-content');
+      const soundSection = document.getElementById('sound-section');
+      const sightingsSec = document.querySelector('.sightings-section');
+      const submitCta    = document.querySelector('.submit-callout');
+      const archiveSec   = document.querySelector('.archive-section');
+      const archiveTitle = document.querySelector('.archive-section .section-title');
+      const archiveCount = document.getElementById('archive-count');
+      const pieces       = document.querySelectorAll('.piece[data-type]');
+
+      // ── Sounds: swap to sound section entirely
+      if (type === 'sound') {
+        mainContent.style.display  = 'none';
+        soundSection.style.display = '';
+        trBuildSoundSection();
+        return;
+      }
+
+      // ── All other tabs: stay in main-content
+      mainContent.style.display  = '';
+      soundSection.style.display = 'none';
+
+      if (type === 'all') {
+        // Show everything
+        if (sightingsSec) sightingsSec.style.display = '';
+        if (submitCta)    submitCta.style.display    = '';
+        if (archiveSec)   archiveSec.style.display   = '';
+        pieces.forEach(p => p.style.display = '');
+        if (archiveTitle) archiveTitle.textContent = 'From the Archive';
+        if (archiveCount) archiveCount.textContent = pieces.length + ' works';
+
+      } else if (type === 'photography') {
+        // Show only sightings (photography = real-world photos)
+        if (sightingsSec) sightingsSec.style.display = '';
+        if (submitCta)    submitCta.style.display    = '';
+        if (archiveSec)   archiveSec.style.display   = 'none';
+
+      } else if (type === 'poetry') {
+        // Show only poetry text pieces
+        if (sightingsSec) sightingsSec.style.display = 'none';
+        if (submitCta)    submitCta.style.display    = 'none';
+        if (archiveSec)   archiveSec.style.display   = '';
+        let visible = 0;
+        pieces.forEach(p => {
+          const show = p.dataset.type === 'poetry';
+          p.style.display = show ? '' : 'none';
+          if (show) visible++;
+        });
+        if (archiveTitle) archiveTitle.textContent = 'Poetry';
+        if (archiveCount) archiveCount.textContent = visible + (visible === 1 ? ' work' : ' works');
+
+      } else if (type === 'spoken-word') {
+        // Show only spoken word pieces
+        if (sightingsSec) sightingsSec.style.display = 'none';
+        if (submitCta)    submitCta.style.display    = 'none';
+        if (archiveSec)   archiveSec.style.display   = '';
+        let visible = 0;
+        pieces.forEach(p => {
+          const show = p.dataset.type === 'spoken-word';
+          p.style.display = show ? '' : 'none';
+          if (show) visible++;
+        });
+        if (archiveTitle) archiveTitle.textContent = 'Spoken Word';
+        if (archiveCount) archiveCount.textContent = visible + (visible === 1 ? ' work' : ' works');
+      }
+    }
+
+    // ── Smile mechanic state
+    const counts    = {};
+    let totalSmiles = 0;
+    let revealed    = false;
+    let whisperShown = false;
+    // ── Stages (3 smiles total)
+    //   1 : btn → lit + counter appears
+    //   2 : btn → glow + page dimming + whisper "keep going."
+    //   3 : btn → burning → FLICKER → REVEAL
+
+    function smileIt(btn) {
+      if (revealed) return;
+
+      const piece = btn.dataset.piece;
+      counts[piece] = (counts[piece] || 0) + 1;
+      totalSmiles++;
+
+      // Update individual count
+      const countEl = document.getElementById('count-' + piece);
+      const n = counts[piece];
+      countEl.textContent = piece.startsWith('p')
+        ? n + (n === 1 ? ' smile' : ' smiles')
+        : n;
+      countEl.classList.add('active');
+
+      // Bounce animation
+      btn.style.transform = 'scale(1.35) rotate(-8deg)';
+      setTimeout(() => (btn.style.transform = ''), 200);
+
+      // ── Stage 1: lit + counter appears
+      if (totalSmiles >= 1) btn.classList.add('lit');
+
+      const counter = document.getElementById('totalCounter');
+      if (totalSmiles === 1) {
+        counter.textContent = totalSmiles + ' smile across the archive';
+        counter.classList.add('show');
+      } else if (totalSmiles > 1 && totalSmiles < 3) {
+        counter.textContent = totalSmiles + ' smiles across the archive';
+      }
+
+      // ── Stage 2: glow + page dims + whisper
+      if (totalSmiles === 2) {
+        document.querySelectorAll('.smile-btn').forEach(b => {
+          b.classList.remove('lit');
+          b.classList.add('glow');
+        });
+        document.body.classList.add('dimming');
+        if (!whisperShown) {
+          whisperShown = true;
+          showWhisper('keep going.');
+        }
+      }
+
+      // ── Stage 3: burning → REVEAL
+      if (totalSmiles === 3) {
+        document.querySelectorAll('.smile-btn').forEach(b => {
+          b.classList.remove('glow');
+          b.classList.add('burning');
+        });
+      }
+
+      // ── Stage 3 continued: REVEAL
+      if (totalSmiles >= 3 && !revealed) {
+        revealed = true;
+        triggerReveal();
+      }
+    }
+
+    function showWhisper(text) {
+      const w = document.getElementById('whisper');
+      w.textContent = text;
+      w.classList.add('show');
+      setTimeout(() => w.classList.remove('show'), 3500);
+    }
+
+    function triggerReveal() {
+      // 1. Flicker the page before going dark
+      document.body.classList.add('flicker');
+
+      // 2. After flicker, show the reveal overlay
+      setTimeout(() => {
+        document.body.classList.remove('flicker');
+        document.getElementById('reveal').classList.add('active');
+      }, 420);
+    }
+
+    // ── Enter — navigate into the chosen page
+    function enterSite(dest) {
+      const overlay = document.getElementById('reveal');
+      overlay.style.transition = 'opacity 1.4s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        window.location.href = dest;
+      }, 1400);
+    }
+
+    // ── Dismiss — go back to archive without losing the moment
+    function dismissReveal() {
+      const overlay = document.getElementById('reveal');
+      overlay.style.transition = 'opacity 0.8s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.style.cssText = '';
+        overlay.classList.remove('active');
+        // Don't reset — the door stays found
+      }, 800);
+    }
+
+    // ── Escape key to dismiss
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && revealed) dismissReveal();
+    });
+
+    // ── Watermark Easter egg: 5 rapid clicks = skip to reveal
+    let watermarkClicks = 0;
+    let watermarkTimer  = null;
+    document.querySelector('.watermark').addEventListener('click', () => {
+      if (revealed) return;
+      watermarkClicks++;
+      clearTimeout(watermarkTimer);
+      watermarkTimer = setTimeout(() => (watermarkClicks = 0), 1800);
+
+      if (watermarkClicks >= 5) {
+        watermarkClicks = 0;
+        if (!revealed) {
+          revealed = true;
+          // Give a little whisper hint first
+          showWhisper('there you are.');
+          setTimeout(triggerReveal, 1200);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
