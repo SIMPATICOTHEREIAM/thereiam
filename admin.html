@@ -1299,13 +1299,15 @@
 
       // Save to cloud (shows up for EVERYONE on every device)
       if (window.THEREIAM_CLOUD) {
+        showToast('Saving to cloud…');
         THEREIAM_CLOUD.write(DATA).then(function() {
-          showToast('Saved — live on all devices.');
-        }).catch(function() {
-          showToast('Saved locally. Set up Firebase to sync everywhere.');
+          showToast('✓ Saved — live on all devices now.');
+        }).catch(function(err) {
+          showToast('Cloud error: ' + (err.message || 'check Firebase rules'));
+          console.error('Firebase write failed:', err);
         });
       } else {
-        showToast('Changes saved.');
+        showToast('Changes saved locally.');
       }
     }
 

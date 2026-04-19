@@ -1,51 +1,53 @@
 /**
- * THEREIAM — Cloud Sync
- * Reads content from Firebase Realtime Database so admin changes
- * made on any device show up for every visitor worldwide.
- *
- * ── SETUP (one time) ────────────────────────────────────────────
- * 1. Go to https://console.firebase.google.com
- * 2. Create a project (name it "thereiam" or anything you like)
- * 3. Click "Realtime Database" → Create Database → Start in TEST mode
- * 4. Copy your database URL (looks like: https://thereiam-xxxxx-default-rtdb.firebaseio.com)
- * 5. Paste it below replacing the placeholder
- * ────────────────────────────────────────────────────────────────
+ * THEREIAM — Cloud Sync via Firebase Realtime Database
+ * Admin changes save here. Every visitor reads from here.
  */
 
 const THEREIAM_DB = 'https://thereiam-d3127-default-rtdb.firebaseio.com';
 
-// ── Write helper (used by admin.html) ──────────────────────────
+// ── Keys synced to cloud (no brandPhotos — they're embedded base64, too large) ──
+const CLOUD_KEYS = ['music', 'hoodies', 'archive', 'sightings'];
+
 window.THEREIAM_CLOUD = {
+
+  // Write only the keys that make sense to sync (not huge base64 images)
   write: function(data) {
-    if (THEREIAM_DB.includes('REPLACE-WITH')) return Promise.resolve();
+    var payload = {};
+    CLOUD_KEYS.forEach(function(k) { if (data[k] != null) payload[k] = data[k]; });
+
     return fetch(THEREIAM_DB + '/content.json', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(r => r.json());
+      body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+      // Firebase returns {"error":"..."} if write was rejected
+      if (result && result.error) throw new Error(result.error);
+      return result;
+    });
   },
 
+  // Read from cloud and patch THEREIAM_CONTENT
   read: function() {
-    if (THEREIAM_DB.includes('REPLACE-WITH')) return Promise.resolve(null);
-    return fetch(THEREIAM_DB + '/content.json')
-      .then(r => r.json())
-      .catch(() => null);
+    return fetch(THEREIAM_DB + '/content.json?t=' + Date.now()) // bust cache
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && data.error) return null; // permission denied etc
+        return data;
+      })
+      .catch(function() { return null; });
   }
 };
 
-// ── On every page load: fetch cloud content, patch THEREIAM_CONTENT ──
-(function () {
-  if (THEREIAM_DB.includes('REPLACE-WITH')) return;
-
-  THEREIAM_CLOUD.read().then(function (data) {
+// ── Auto-read on every page load ──────────────────────────────
+(function() {
+  THEREIAM_CLOUD.read().then(function(data) {
     if (data && typeof THEREIAM_CONTENT !== 'undefined') {
-      ['music', 'hoodies', 'archive', 'sightings', 'brandPhotos'].forEach(function (key) {
+      CLOUD_KEYS.forEach(function(key) {
         if (data[key] != null) THEREIAM_CONTENT[key] = data[key];
       });
     }
-    // Signal pages to re-render with fresh data
-    document.dispatchEvent(new Event('thereiam:cloud-ready'));
-  }).catch(function () {
     document.dispatchEvent(new Event('thereiam:cloud-ready'));
   });
 })();
