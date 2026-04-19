@@ -149,8 +149,11 @@
       display: flex;
       gap: 0;
       overflow-x: auto;
-      border-bottom: 1px solid var(--rule); /* container border — active tab overlaps it */
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      border-bottom: 1px solid var(--rule);
     }
+    .arch-filters::-webkit-scrollbar { display: none; }
 
     .filter-btn {
       font-family: 'Space Mono', monospace;
@@ -520,7 +523,8 @@
 
     /* ── responsive ── */
     @media (max-width: 900px) {
-      .arch-topbar, .arch-nameplate, .arch-filters { padding-left: 24px; padding-right: 24px; }
+      .arch-topbar, .arch-nameplate { padding-left: 24px; padding-right: 24px; }
+      .arch-filters { padding-left: 16px; padding-right: 16px; }
       .arch-body { grid-template-columns: 1fr; padding: 40px 24px 100px; gap: 48px; }
       .arch-sidebar { display: none; }
       .sightings-grid { grid-template-columns: 1fr 1fr; }
@@ -528,8 +532,11 @@
     }
 
     @media (max-width: 560px) {
+      .arch-topbar, .arch-nameplate { padding-left: 16px; padding-right: 16px; }
+      .arch-filters { padding-left: 8px; padding-right: 8px; }
       .sightings-grid { grid-template-columns: 1fr; }
       .arch-nameplate { flex-direction: column; gap: 8px; }
+      .filter-btn { padding: 12px 14px; font-size: 8px; }
     }
   </style>
 </head>

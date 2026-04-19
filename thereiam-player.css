@@ -22,6 +22,7 @@
   align-items: center;
   padding: 0 28px;
   z-index: 9500;
+  isolation: isolate;
   font-family: 'Space Mono', monospace;
   box-shadow: 0 -4px 28px rgba(26,22,18,0.07);
   transition: transform 0.42s cubic-bezier(0.4,0,0.2,1),
@@ -474,17 +475,19 @@
    RESPONSIVE
 ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
-  #tr-player { padding: 0 16px; height: 72px; }
+  #tr-player { padding: 0 16px; height: 64px; transform: none; }
+  #tr-player.tr-hidden { transform: translateY(68px); }
   #tr-player.tr-expanded { width: calc(100vw - 32px); right: 16px; height: 420px; }
-  .tr-page { padding-bottom: 72px !important; }
+  .tr-page { padding-bottom: 64px !important; }
   .tr-left { width: auto; min-width: 0; gap: 10px; }
   .tr-info .tr-track-artist { display: none; }
   .tr-right { min-width: 0; gap: 10px; }
   .tr-brand-label { display: none; }
-  .tr-center { padding: 0 14px; }
-  .tr-vinyl { width: 42px; height: 42px; }
-  .tr-vinyl-img { width: 20px; height: 20px; }
-  #tr-queue-panel { bottom: 72px; }
+  .tr-center { padding: 0 10px; }
+  .tr-vinyl { width: 36px; height: 36px; }
+  .tr-vinyl-img { width: 18px; height: 18px; }
+  #tr-queue-panel { bottom: 64px; }
+  .tr-play { width: 34px !important; height: 34px !important; }
 }
 
 @media (max-width: 480px) {
