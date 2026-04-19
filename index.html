@@ -1413,7 +1413,7 @@
       // Corner popup — show on every new like, auto-dismiss after 4s
       clearTimeout(window._toastTimer);
       openToast();
-      window._toastTimer = setTimeout(closeToast, 4000);
+      window._toastTimer = setTimeout(closeToast, 10000);
     }
 
     function openToast() {
@@ -1431,8 +1431,8 @@
       t.setAttribute('style',
         'position:fixed !important;bottom:28px !important;right:28px !important;' +
         'top:auto !important;left:auto !important;margin:0 !important;' +
-        'width:340px;background:#f5f2eb;border:1px solid rgba(26,22,18,0.15);' +
-        'padding:32px 28px 26px;z-index:2147483647;' +
+        'width:380px;background:#f5f2eb;border:1px solid rgba(26,22,18,0.15);' +
+        'padding:36px 32px 30px;z-index:2147483647;' +
         'box-shadow:0 8px 36px rgba(14,12,8,0.22);' +
         'opacity:0;transform:translateY(16px);' +
         'transition:opacity 0.4s ease,transform 0.4s ease;'
@@ -1451,13 +1451,13 @@
       var eye = el('div','font-size:7px;letter-spacing:0.42em;text-transform:uppercase;color:rgba(26,22,18,0.35);margin-bottom:12px;','Pilot Collection Vol. 1');
       eye.style.fontFamily = 'Space Mono,monospace';
 
-      var head = el('div','font-size:32px;letter-spacing:0.1em;color:rgba(26,22,18,0.88);margin-bottom:10px;line-height:1;','THEREIAM');
+      var head = el('div','font-size:34px;letter-spacing:0.1em;color:rgba(26,22,18,0.88);margin-bottom:12px;line-height:1;','THEREIAM');
       head.style.fontFamily = 'Northpoint,monospace';
 
       var hr = document.createElement('hr');
       hr.style.cssText = 'width:28px;border:none;border-top:1px solid rgba(26,22,18,0.15);margin:0 0 14px;';
 
-      var sub = el('div','font-weight:300;font-size:13px;color:rgba(26,22,18,0.5);letter-spacing:0.03em;margin-bottom:22px;','Everyone IS Everything.');
+      var sub = el('div','font-weight:400;font-size:13px;color:rgba(26,22,18,0.7);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:22px;','Find the piece that finds you.');
       sub.style.fontFamily = 'DM Sans,sans-serif';
 
       var row = el('div','display:flex;gap:10px;flex-wrap:wrap;');
@@ -1487,7 +1487,7 @@
           var sy = window.pageYOffset || document.documentElement.scrollTop;
           var sx = window.pageXOffset || document.documentElement.scrollLeft;
           t.style.setProperty('top',  (sy + window.innerHeight - t.offsetHeight - 28) + 'px', 'important');
-          t.style.setProperty('left', (sx + window.innerWidth  - 340 - 28) + 'px', 'important');
+          t.style.setProperty('left', (sx + window.innerWidth  - 380 - 28) + 'px', 'important');
           t.style.setProperty('bottom', 'auto', 'important');
           t.style.setProperty('right',  'auto', 'important');
         }
