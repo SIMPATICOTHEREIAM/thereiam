@@ -38,7 +38,7 @@
       font-family: 'Inter', sans-serif;
       font-weight: 300;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow-x: clip; /* clip instead of hidden so sticky header children can scroll */
     }
 
     /* ── paper grain — tiled shift, no edge flicker ── */
@@ -821,7 +821,7 @@
                 style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;background:none;border:1px solid rgba(26,22,18,.15);padding:9px 20px;cursor:pointer;color:var(--ink-mid);transition:all .2s;"
                 onmouseover="this.style.borderColor='var(--ink)';this.style.color='var(--ink)'"
                 onmouseout="this.style.borderColor='rgba(26,22,18,.15)';this.style.color='var(--ink-mid)'"
-              >▶ Play</button>
+              ><svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:6px;margin-top:-1px"><path d="M0 0l9 5L0 10z"/></svg>PLAY</button>
             </div>
           </article>`).join('')}`;
     }
