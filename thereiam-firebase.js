@@ -6,7 +6,7 @@
 const THEREIAM_DB = 'https://thereiam-d3127-default-rtdb.firebaseio.com';
 
 // ── Keys synced to cloud (no brandPhotos — they're embedded base64, too large) ──
-const CLOUD_KEYS = ['music', 'hoodies', 'archive', 'sightings'];
+const CLOUD_KEYS = ['music', 'hoodies', 'archive', 'sightings', 'brandPhotos'];
 
 window.THEREIAM_CLOUD = {
 

@@ -1371,75 +1371,91 @@
     }
 
     /* ══════════════════════════════════════════════
+       CLOUDINARY UPLOAD HELPER
+    ══════════════════════════════════════════════ */
+    const CLD_CLOUD  = 'dldobufsx';
+    const CLD_PRESET = 'THEREIAM';
+
+    async function uploadToCloudinary(file) {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', CLD_PRESET);
+      fd.append('folder', 'thereiam');
+      const r = await fetch('https://api.cloudinary.com/v1_1/' + CLD_CLOUD + '/auto/upload', {
+        method: 'POST', body: fd
+      });
+      const data = await r.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.secure_url; // permanent public URL, works on every device
+    }
+
+    /* ══════════════════════════════════════════════
        IMAGE UPLOAD
     ══════════════════════════════════════════════ */
-    function trUploadHoodieImg(input, hi, ii) {
+    async function trUploadHoodieImg(input, hi, ii) {
       const file = input.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        DATA.hoodies[hi].images[ii] = e.target.result;
+      showToast('Uploading image…');
+      try {
+        const url = await uploadToCloudinary(file);
+        DATA.hoodies[hi].images[ii] = url;
         const prev = document.getElementById('img-prev-' + hi + '-' + ii);
         const path = document.getElementById('img-path-' + hi + '-' + ii);
-        if (prev) { prev.src = e.target.result; prev.style.opacity = 1; }
-        if (path) path.value = '(uploaded image)';
-        showToast('Image uploaded — hit Save changes.');
-      };
-      reader.readAsDataURL(file);
+        if (prev) { prev.src = url; prev.style.opacity = 1; }
+        if (path) path.value = url;
+        showToast('✓ Image live — hit Save changes.');
+      } catch(e) { showToast('Upload failed: ' + e.message); }
     }
 
-    function trUploadBrandImg(input, i) {
+    async function trUploadBrandImg(input, i) {
       const file = input.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = e => {
-        DATA.brandPhotos[i] = e.target.result;
+      showToast('Uploading photo…');
+      try {
+        const url = await uploadToCloudinary(file);
+        DATA.brandPhotos[i] = url;
         const prev = document.getElementById('bp-img-' + i);
         const path = document.getElementById('bp-path-' + i);
-        if (prev) { prev.src = e.target.result; prev.style.opacity = 1; }
-        if (path) path.value = '(uploaded image)';
-        showToast('Photo uploaded — hit Save changes.');
-      };
-      reader.readAsDataURL(file);
+        if (prev) { prev.src = url; prev.style.opacity = 1; }
+        if (path) path.value = url;
+        showToast('✓ Photo live — hit Save changes.');
+      } catch(e) { showToast('Upload failed: ' + e.message); }
     }
 
-    /* ── Audio upload for music track ── */
+    /* ── Audio upload for music track → Cloudinary ── */
     async function trUploadAudio(input, i) {
       const file = input.files[0];
       if (!file) return;
-      showToast('Uploading audio…');
+      showToast('Uploading audio to cloud…');
       try {
-        // Use filename as the key; update DATA.music[i].file to match
-        const key = 'Music/' + file.name;
-        await TRDB.put(key, file);
-        DATA.music[i].file = key;
+        const url = await uploadToCloudinary(file);
+        DATA.music[i].file = url; // permanent public URL — works on every device
         const pathEl = document.getElementById('music-path-' + i);
-        if (pathEl) pathEl.value = key;
-        // Show green stored badge
+        if (pathEl) pathEl.value = url;
         const badge = document.getElementById('music-stored-' + i);
-        if (badge) badge.style.display = 'inline';
-        // Show audio preview player
-        const blobUrl = await TRDB.getBlobUrl(key);
+        if (badge) { badge.style.display = 'inline'; badge.textContent = '☁ cloud'; }
         const preview = document.getElementById('audio-preview-' + i);
-        if (preview && blobUrl) { preview.src = blobUrl; preview.style.display = 'block'; }
+        if (preview) { preview.src = url; preview.style.display = 'block'; }
         saveAll();
-        showToast('Audio uploaded and saved — ready to play.');
-        renderMediaLibrary();
-      } catch (e) {
-        showToast('Upload failed — ' + e.message);
+        showToast('✓ Audio live on all devices.');
+      } catch(e) {
+        showToast('Upload failed: ' + e.message);
       }
     }
 
-    /* ── Media Library upload (any file type) ── */
+    /* ── Media Library upload → Cloudinary ── */
     async function trUploadMediaLibrary(input) {
       const files = Array.from(input.files);
       if (!files.length) return;
-      showToast('Uploading ' + files.length + ' file(s)…');
+      showToast('Uploading ' + files.length + ' file(s) to cloud…');
       try {
+        const urls = [];
         for (const file of files) {
-          await TRDB.put(file.name, file);
+          const url = await uploadToCloudinary(file);
+          urls.push({ name: file.name, url });
+          await TRDB.put(file.name, file); // keep local copy too
         }
-        showToast(files.length + ' file(s) stored in Media Library.');
+        showToast('✓ ' + files.length + ' file(s) live in cloud.');
         renderMediaLibrary();
       } catch (e) {
         showToast('Upload failed — ' + e.message);
