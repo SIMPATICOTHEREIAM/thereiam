@@ -1418,96 +1418,102 @@
 
     function openToast() {
       var old = document.getElementById('tr-toast');
-      if (old) old.remove();
+      if (old) { try { old.hidePopover(); } catch(e) {} old.remove(); }
+      if (window._trScrollFn) { window.removeEventListener('scroll', window._trScrollFn); window._trScrollFn = null; }
 
       var t = document.createElement('div');
       t.id = 'tr-toast';
-      t.style.cssText = [
-        'position:fixed',
-        'bottom:28px',
-        'right:28px',
-        'width:320px',
-        'background:#f5f2eb',
-        'border:1px solid rgba(26,22,18,0.15)',
-        'padding:28px 26px 24px',
-        'z-index:2147483647',
-        'box-shadow:0 8px 32px rgba(14,12,8,0.22)',
-        'opacity:0',
-        'transform:translateY(14px)',
-        'transition:opacity 0.4s ease,transform 0.4s ease'
-      ].join(';');
 
-      function el(tag, css, text) {
+      var hasPopover = typeof t.showPopover === 'function';
+      if (hasPopover) t.setAttribute('popover', 'manual');
+
+      // Use setAttribute so !important overrides popover UA defaults
+      t.setAttribute('style',
+        'position:fixed !important;bottom:28px !important;right:28px !important;' +
+        'top:auto !important;left:auto !important;margin:0 !important;' +
+        'width:340px;background:#f5f2eb;border:1px solid rgba(26,22,18,0.15);' +
+        'padding:32px 28px 26px;z-index:2147483647;' +
+        'box-shadow:0 8px 36px rgba(14,12,8,0.22);' +
+        'opacity:0;transform:translateY(16px);' +
+        'transition:opacity 0.4s ease,transform 0.4s ease;'
+      );
+
+      function el(tag, css, txt) {
         var e = document.createElement(tag);
-        if (css)  e.style.cssText = css;
-        if (text) e.textContent   = text;
-        return e;
-      }
-      function a(href, css, text) {
-        var e = document.createElement('a');
-        e.href       = href;
-        e.style.cssText = css;
-        e.textContent   = text;
+        if (css) e.style.cssText = css;
+        if (txt) e.textContent = txt;
         return e;
       }
 
-      var closeBtn = el('button',
-        'position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;font-size:14px;color:rgba(26,22,18,0.35);',
-        '\u2715');
-      closeBtn.onclick = closeToast;
+      var x = el('button','position:absolute;top:12px;right:14px;background:none;border:none;cursor:pointer;font-size:14px;color:rgba(26,22,18,0.35);padding:4px;','✕');
+      x.onclick = closeToast;
 
-      var eyebrow = el('div',
-        'font-size:7px;letter-spacing:0.42em;text-transform:uppercase;color:rgba(26,22,18,0.35);margin-bottom:12px;',
-        'Pilot Collection Vol. 1');
+      var eye = el('div','font-size:7px;letter-spacing:0.42em;text-transform:uppercase;color:rgba(26,22,18,0.35);margin-bottom:12px;','Pilot Collection Vol. 1');
+      eye.style.fontFamily = 'Space Mono,monospace';
 
-      var heading = el('div',
-        'font-size:30px;letter-spacing:0.1em;color:rgba(26,22,18,0.88);margin-bottom:10px;line-height:1;',
-        'THEREIAM');
-      heading.style.fontFamily = 'Northpoint, monospace';
+      var head = el('div','font-size:32px;letter-spacing:0.1em;color:rgba(26,22,18,0.88);margin-bottom:10px;line-height:1;','THEREIAM');
+      head.style.fontFamily = 'Northpoint,monospace';
 
-      var rule = document.createElement('hr');
-      rule.style.cssText = 'width:28px;border:none;border-top:1px solid rgba(26,22,18,0.15);margin:0 0 14px;';
+      var hr = document.createElement('hr');
+      hr.style.cssText = 'width:28px;border:none;border-top:1px solid rgba(26,22,18,0.15);margin:0 0 14px;';
 
-      var tag = el('div',
-        'font-weight:300;font-size:12px;color:rgba(26,22,18,0.5);letter-spacing:0.03em;margin-bottom:20px;',
-        'Everyone IS Everything.');
-      tag.style.fontFamily = 'DM Sans, sans-serif';
+      var sub = el('div','font-weight:300;font-size:13px;color:rgba(26,22,18,0.5);letter-spacing:0.03em;margin-bottom:22px;','Everyone IS Everything.');
+      sub.style.fontFamily = 'DM Sans,sans-serif';
 
-      var btnStyle = 'font-size:8px;letter-spacing:0.2em;text-transform:uppercase;border:1px solid rgba(26,22,18,0.25);padding:11px 18px;text-decoration:none;display:inline-block;';
-      var row = el('div', 'display:flex;gap:10px;flex-wrap:wrap;');
-      var lnk1 = a('page-hoodies.html',
-        btnStyle + 'color:#f5f2eb;background:rgba(26,22,18,0.88);',
-        'The Collection \u2192');
-      var lnk2 = a('page-brand.html',
-        btnStyle + 'color:rgba(26,22,18,0.82);background:transparent;',
-        'The Brand \u2192');
-      lnk1.style.fontFamily = lnk2.style.fontFamily = 'Space Mono, monospace';
-      row.appendChild(lnk1);
-      row.appendChild(lnk2);
+      var row = el('div','display:flex;gap:10px;flex-wrap:wrap;');
+      var btnBase = 'font-size:8px;letter-spacing:0.22em;text-transform:uppercase;border:1px solid rgba(26,22,18,0.25);padding:12px 20px;text-decoration:none;display:inline-block;';
+      var b1 = document.createElement('a');
+      b1.href = 'page-hoodies.html';
+      b1.style.cssText = btnBase + 'color:#f5f2eb;background:rgba(26,22,18,0.88);';
+      b1.style.fontFamily = 'Space Mono,monospace';
+      b1.textContent = 'The Collection →';
+      var b2 = document.createElement('a');
+      b2.href = 'page-brand.html';
+      b2.style.cssText = btnBase + 'color:rgba(26,22,18,0.82);background:transparent;';
+      b2.style.fontFamily = 'Space Mono,monospace';
+      b2.textContent = 'The Brand →';
+      row.appendChild(b1); row.appendChild(b2);
 
-      t.appendChild(closeBtn);
-      t.appendChild(eyebrow);
-      t.appendChild(heading);
-      t.appendChild(rule);
-      t.appendChild(tag);
-      t.appendChild(row);
-
+      t.appendChild(x); t.appendChild(eye); t.appendChild(head);
+      t.appendChild(hr); t.appendChild(sub); t.appendChild(row);
       document.body.appendChild(t);
 
-      requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-          t.style.opacity   = '1';
-          t.style.transform = 'translateY(0)';
-        });
-      });
+      if (hasPopover) {
+        // Top-layer — always viewport-relative, nothing can trap it
+        t.showPopover();
+      } else {
+        // Fallback: scroll listener to keep it in the corner
+        function reposition() {
+          var sy = window.pageYOffset || document.documentElement.scrollTop;
+          var sx = window.pageXOffset || document.documentElement.scrollLeft;
+          t.style.setProperty('top',  (sy + window.innerHeight - t.offsetHeight - 28) + 'px', 'important');
+          t.style.setProperty('left', (sx + window.innerWidth  - 340 - 28) + 'px', 'important');
+          t.style.setProperty('bottom', 'auto', 'important');
+          t.style.setProperty('right',  'auto', 'important');
+        }
+        reposition();
+        window._trScrollFn = reposition;
+        window.addEventListener('scroll', reposition, {passive:true});
+        window.addEventListener('resize', reposition, {passive:true});
+      }
+
+      requestAnimationFrame(function() { requestAnimationFrame(function() {
+        t.style.opacity   = '1';
+        t.style.transform = 'translateY(0)';
+      }); });
     }
 
     function closeToast() {
-      const t = document.getElementById('tr-toast');
+      var t = document.getElementById('tr-toast');
       if (!t) return;
+      if (window._trScrollFn) { window.removeEventListener('scroll', window._trScrollFn); window._trScrollFn = null; }
       t.style.opacity   = '0';
-      t.style.transform = 'translateY(14px)';
-      setTimeout(() => { if (t.parentNode) t.remove(); }, 420);
+      t.style.transform = 'translateY(16px)';
+      setTimeout(function() {
+        if (!t.parentNode) return;
+        try { t.hidePopover(); } catch(e) {}
+        t.remove();
+      }, 420);
     }
   </script></body>
 </html>
