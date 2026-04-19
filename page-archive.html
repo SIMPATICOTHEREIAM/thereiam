@@ -38,7 +38,6 @@
       font-family: 'Inter', sans-serif;
       font-weight: 300;
       min-height: 100vh;
-      overflow-x: clip; /* clip instead of hidden so sticky header children can scroll */
     }
 
     /* ── paper grain — tiled shift, no edge flicker ── */
@@ -66,14 +65,15 @@
        HEADER
     ════════════════════════════ */
     .arch-header {
-      position: sticky;
-      top: 0;
-      z-index: 200;
+      /* NOT sticky — nameplate scrolls away on mobile, only filter bar sticks */
       background: var(--bg);
-      /* no bottom border — arch-filters provides it so active tabs sit flush */
     }
 
     .arch-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 210;
+      background: var(--bg);
       border-bottom: 1px solid var(--rule);
       padding: 8px 48px;
       display: flex;
@@ -144,14 +144,21 @@
     }
 
     /* ── filter tabs ── */
+    /* IMPORTANT: standalone sticky element — NOT inside another sticky parent.
+       This is the only way iOS Safari allows overflow-x scroll to work. */
     .arch-filters {
+      position: sticky;
+      top: 37px; /* sits just below the sticky topbar (~37px tall) */
+      z-index: 200;
+      background: var(--bg);
       padding: 0 48px;
       display: flex;
       gap: 0;
-      overflow-x: auto;
+      overflow-x: scroll;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       border-bottom: 1px solid var(--rule);
+      -webkit-transform: translateZ(0); /* force GPU layer on iOS */
     }
     .arch-filters::-webkit-scrollbar { display: none; }
 
@@ -532,10 +539,15 @@
     }
 
     @media (max-width: 560px) {
-      .arch-topbar, .arch-nameplate { padding-left: 16px; padding-right: 16px; }
+      .arch-topbar { padding-left: 16px; padding-right: 16px; gap: 8px; }
+      /* On mobile: hide the center brand (saves space) and submit button */
+      .arch-brand { display: none; }
+      .arch-submit-btn { display: none; }
+      .arch-nameplate { padding: 18px 16px 14px; flex-direction: column; gap: 4px; }
+      .arch-title { font-size: 28px; }
+      .arch-subtitle { font-size: 8px; letter-spacing: 0.2em; }
       .arch-filters { padding-left: 8px; padding-right: 8px; }
       .sightings-grid { grid-template-columns: 1fr; }
-      .arch-nameplate { flex-direction: column; gap: 8px; }
       .filter-btn { padding: 12px 14px; font-size: 8px; }
     }
   </style>
@@ -548,8 +560,8 @@
     <div class="arch-topbar">
       <a href="landing-preview.html" class="back-link">← In Plain Sight</a>
       <a href="landing-preview.html" class="arch-brand">THEREIAM</a>
-      <div style="display:flex;align-items:center;gap:16px;">
-        <a href="#" onclick="trOpenSubmit();return false;" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ember);border:1px solid rgba(184,132,31,0.3);padding:3px 10px;text-decoration:none;transition:background 0.2s;" onmouseenter="this.style.background='rgba(184,132,31,0.08)'" onmouseleave="this.style.background='none'">Submit Your Work</a>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="#" class="arch-submit-btn" onclick="trOpenSubmit();return false;" style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--ember);border:1px solid rgba(184,132,31,0.3);padding:3px 10px;text-decoration:none;white-space:nowrap;transition:background 0.2s;" onmouseenter="this.style.background='rgba(184,132,31,0.08)'" onmouseleave="this.style.background='none'">Submit Your Work</a>
         <button class="arch-gear" onclick="openAdminModal()" title="Admin">⚙</button>
       </div>
     </div>
@@ -559,15 +571,16 @@
       <span class="arch-subtitle">All works · All sightings</span>
     </div>
 
-    <div class="arch-filters">
-      <button class="filter-btn active" data-filter="all">All</button>
-      <button class="filter-btn" data-filter="Poetry">Poetry</button>
-      <button class="filter-btn" data-filter="Spoken Word">Spoken Word</button>
-      <button class="filter-btn" data-filter="Photography">Photography</button>
-      <button class="filter-btn" data-filter="Sounds">Sounds</button>
-    </div>
-
   </header>
+
+  <!-- Filter bar: standalone sticky element — must NOT be inside sticky .arch-header -->
+  <div class="arch-filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="Poetry">Poetry</button>
+    <button class="filter-btn" data-filter="Spoken Word">Spoken Word</button>
+    <button class="filter-btn" data-filter="Photography">Photography</button>
+    <button class="filter-btn" data-filter="Sounds">Sounds</button>
+  </div>
 
 
   <!-- ════ BODY ════ -->
@@ -874,8 +887,20 @@
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         applyFilter(btn.dataset.filter);
+        // Scroll active tab into center view — works even when tab bar is partially off-screen
+        btn.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
       });
     });
+
+    // On load, measure the actual topbar height and adjust filter bar top offset
+    (function() {
+      const topbar = document.querySelector('.arch-topbar');
+      const filters = document.querySelector('.arch-filters');
+      if (topbar && filters) {
+        const h = topbar.getBoundingClientRect().height;
+        filters.style.top = h + 'px';
+      }
+    })();
 
     // ── Init ──
     renderSidebar();
