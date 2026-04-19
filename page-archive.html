@@ -663,6 +663,7 @@
 
   <!-- ════ CONTENT + LOGIC ════ -->
   <script src="thereiam-content.js"></script>
+  <script src="thereiam-firebase.js"></script>
   <script src="thereiam-media-db.js"></script>
   <script src="thereiam-player.js"></script>
   <script src="thereiam-submit.js"></script>
@@ -872,6 +873,12 @@
     // ── Init ──
     renderSidebar();
     applyFilter('all');
+
+    // Re-render when cloud data arrives
+    document.addEventListener('thereiam:cloud-ready', function() {
+      renderSidebar();
+      applyFilter(currentFilter);
+    });
   </script>
 
 </body>

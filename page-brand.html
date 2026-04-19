@@ -316,6 +316,7 @@
     <div id="tr-queue-panel"></div>
   </div>
   <script src="thereiam-content.js"></script>
+  <script src="thereiam-firebase.js"></script>
   <script>
     // Override brandPhotos with embedded base64 before render
     if (typeof THEREIAM_CONTENT !== 'undefined') {
@@ -455,6 +456,9 @@
     /* ── render ── */
     document.getElementById('photo-scroll').innerHTML =
       buildLayout(THEREIAM_CONTENT.brandPhotos || []);
+      document.addEventListener('thereiam:cloud-ready', function() {
+        buildLayout(THEREIAM_CONTENT.brandPhotos || []);
+      });
   </script>
 </body>
 </html>

@@ -860,6 +860,7 @@
 
   <script src="thereiam-media-db.js"></script>
   <script src="thereiam-content.js"></script>
+  <script src="thereiam-firebase.js"></script>
   <script>
     /* ══════════════════════════════════════════════
        PASSWORD — with rate limiting
@@ -1292,9 +1293,20 @@
       const igEl = document.getElementById('ig-handle');
       if (igEl) DATA.instagram = igEl.value;
 
+      // Save locally (instant, works offline)
       localStorage.setItem('tr_content_overrides', JSON.stringify(DATA));
       localStorage.setItem('tr_tracks_override', JSON.stringify(DATA.music));
-      showToast('Changes saved.');
+
+      // Save to cloud (shows up for EVERYONE on every device)
+      if (window.THEREIAM_CLOUD) {
+        THEREIAM_CLOUD.write(DATA).then(function() {
+          showToast('Saved — live on all devices.');
+        }).catch(function() {
+          showToast('Saved locally. Set up Firebase to sync everywhere.');
+        });
+      } else {
+        showToast('Changes saved.');
+      }
     }
 
     function resetAll() {
