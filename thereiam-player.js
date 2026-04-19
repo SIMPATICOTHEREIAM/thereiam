@@ -382,3 +382,19 @@ if (document.readyState === 'loading') {
 } else {
   trInit();
 }
+
+// ── Re-init when Firebase cloud data arrives ────────────
+// TR_TRACKS is set at startup before Firebase responds.
+// When cloud data patches THEREIAM_CONTENT.music, re-run trInit
+// so the player picks up the real track list.
+document.addEventListener('thereiam:cloud-ready', function() {
+  if (typeof THEREIAM_CONTENT === 'undefined') return;
+  var newTracks = THEREIAM_CONTENT.music || [];
+  // Only re-init if track list actually changed
+  if (JSON.stringify(newTracks) !== JSON.stringify(TR_TRACKS)) {
+    TR_TRACKS = newTracks;
+    var bar = document.getElementById('tr-player');
+    if (bar) { bar.innerHTML = ''; bar.classList.remove('tr-hidden'); }
+    trInit();
+  }
+});
